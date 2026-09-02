@@ -10,7 +10,7 @@ export function Input({
     <input
       type={type}
       className={cn(
-        "flex h-11 w-full rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm text-navy shadow-sm transition-colors placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 disabled:cursor-not-allowed disabled:opacity-50",
+        "flex h-11 w-full rounded-lg border border-af-cyan/15 bg-af-surface px-4 py-2 text-sm text-af-text shadow-sm transition-colors placeholder:text-af-muted/60 focus-visible:border-af-cyan/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-af-cyan/20 disabled:cursor-not-allowed disabled:opacity-50",
         className,
       )}
       {...props}
@@ -25,7 +25,7 @@ export function Textarea({
   return (
     <textarea
       className={cn(
-        "flex min-h-[120px] w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-navy shadow-sm transition-colors placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 disabled:cursor-not-allowed disabled:opacity-50",
+        "flex min-h-[120px] w-full rounded-lg border border-af-cyan/15 bg-af-surface px-4 py-3 text-sm text-af-text shadow-sm transition-colors placeholder:text-af-muted/60 focus-visible:border-af-cyan/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-af-cyan/20 disabled:cursor-not-allowed disabled:opacity-50",
         className,
       )}
       {...props}
@@ -39,7 +39,7 @@ export function Label({
 }: React.ComponentProps<"label">) {
   return (
     <label
-      className={cn("text-sm font-medium text-navy", className)}
+      className={cn("text-sm font-medium text-af-muted", className)}
       {...props}
     />
   );

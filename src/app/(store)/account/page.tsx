@@ -18,13 +18,16 @@ export default async function AccountPage() {
   const orders = await getUserOrders(user.id);
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6">
-      <div className="mb-8 flex items-start justify-between gap-4">
+    <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 lg:py-16">
+      <div className="mb-10 flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-navy">My account</h1>
-          <p className="mt-1 text-slate-600">{user.email}</p>
+          <p className="mb-2 text-[11px] font-semibold tracking-[0.22em] text-af-cyan uppercase">
+            Account
+          </p>
+          <h1 className="text-3xl font-bold tracking-tight text-af-text">My account</h1>
+          <p className="mt-1 text-af-muted">{user.email}</p>
           {profile?.full_name && (
-            <p className="text-sm text-slate-500">{profile.full_name}</p>
+            <p className="text-sm text-af-muted/80">{profile.full_name}</p>
           )}
         </div>
         <form action="/auth/signout" method="post">
@@ -35,34 +38,34 @@ export default async function AccountPage() {
       </div>
 
       {profile?.role === "admin" && (
-        <div className="mb-8 rounded-2xl border border-cyan/30 bg-cyan/5 p-4">
-          <p className="text-sm text-navy">
+        <div className="mb-8 border border-af-cyan/20 bg-af-cyan/5 p-5">
+          <p className="text-sm text-af-text">
             You have admin access.{" "}
-            <Link href="/admin" className="font-semibold text-cyan hover:underline">
+            <Link href="/admin" className="font-semibold text-af-cyan hover:underline">
               Go to admin dashboard →
             </Link>
           </p>
         </div>
       )}
 
-      <h2 className="mb-4 text-xl font-bold text-navy">Order history</h2>
+      <h2 className="mb-5 text-xl font-bold text-af-text">Order history</h2>
       {orders.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-slate-200 p-8 text-center">
-          <p className="text-slate-500">No orders yet.</p>
-          <Button variant="cyan" className="mt-4" asChild>
+        <div className="border border-dashed border-af-cyan/20 p-10 text-center">
+          <p className="text-af-muted">No orders yet.</p>
+          <Button variant="primary" className="mt-5" asChild>
             <Link href="/shop">Start shopping</Link>
           </Button>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-3">
           {orders.map((order) => (
             <div
               key={order.id}
-              className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white p-5"
+              className="flex items-center justify-between border border-af-cyan/10 bg-af-surface p-5"
             >
               <div>
-                <p className="font-semibold text-navy">{formatPrice(order.total_cents)}</p>
-                <p className="text-sm text-slate-500">{formatDate(order.created_at)}</p>
+                <p className="font-semibold text-af-text">{formatPrice(order.total_cents)}</p>
+                <p className="text-sm text-af-muted">{formatDate(order.created_at)}</p>
               </div>
               <Badge variant={order.status === "paid" ? "cyan" : "outline"}>
                 {order.status}

@@ -5,7 +5,7 @@ import { StoreHeader } from "@/components/store/header";
 export const metadata: Metadata = {
   title: "Aero Feather — Premium Shuttlecocks Ireland",
   description:
-    "Shop tournament-grade shuttlecocks from Aero Feather. Fast delivery across Ireland. Professional, club, and practice ranges.",
+    "Tournament-grade goose feather shuttlecocks engineered for Irish badminton. Premium flight, durability and performance.",
 };
 
 export default function StoreLayout({
@@ -14,9 +14,9 @@ export default function StoreLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex min-h-screen flex-col bg-white">
+    <div className="flex min-h-screen flex-col bg-af-bg text-af-text">
       <StoreHeader />
-      <main className="flex-1">{children}</main>
+      <main className="flex-1 pt-16 lg:pt-[4.5rem]">{children}</main>
       <StoreFooter />
     </div>
   );

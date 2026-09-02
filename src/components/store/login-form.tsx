@@ -82,13 +82,13 @@ export function LoginForm() {
           required
         />
       </div>
-      {error && <p className="text-sm text-red-600">{error}</p>}
-      <Button type="submit" variant="cyan" className="w-full" disabled={loading}>
+      {error && <p className="text-sm text-red-400">{error}</p>}
+      <Button type="submit" variant="primary" className="w-full" disabled={loading}>
         {loading ? "Please wait…" : mode === "login" ? "Sign in" : "Create account"}
       </Button>
       <button
         type="button"
-        className="w-full text-sm text-slate-500 hover:text-navy"
+        className="w-full text-sm text-af-muted transition-colors hover:text-af-cyan"
         onClick={() => setMode(mode === "login" ? "signup" : "login")}
       >
         {mode === "login"

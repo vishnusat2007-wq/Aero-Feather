@@ -39,10 +39,10 @@ export default function CartPage() {
 
   if (items.length === 0) {
     return (
-      <div className="mx-auto max-w-2xl px-4 py-20 text-center sm:px-6">
-        <h1 className="text-3xl font-bold text-navy">Your cart is empty</h1>
-        <p className="mt-4 text-slate-600">Browse our shuttlecocks and add items to get started.</p>
-        <Button variant="cyan" className="mt-8" asChild>
+      <div className="mx-auto max-w-2xl px-4 py-24 text-center sm:px-6">
+        <h1 className="text-3xl font-bold tracking-tight text-af-text">Your cart is empty</h1>
+        <p className="mt-4 text-af-muted">Browse our shuttlecocks and add items to get started.</p>
+        <Button variant="primary" className="mt-8" asChild>
           <Link href="/shop">Shop now</Link>
         </Button>
       </div>
@@ -50,76 +50,79 @@ export default function CartPage() {
   }
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6">
-      <h1 className="mb-8 text-3xl font-bold text-navy">Shopping cart</h1>
+    <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:py-16">
+      <h1 className="mb-10 text-3xl font-bold tracking-tight text-af-text">Shopping cart</h1>
       <div className="grid gap-10 lg:grid-cols-3">
         <div className="space-y-4 lg:col-span-2">
           {items.map((item) => (
             <div
               key={item.productId}
-              className="flex gap-4 rounded-2xl border border-slate-200 bg-white p-4"
+              className="flex gap-4 border border-af-cyan/10 bg-af-surface p-5"
             >
-              <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-slate-50">
+              <div className="relative h-20 w-20 shrink-0 overflow-hidden bg-af-bg-secondary">
                 {item.imageUrl ? (
                   <Image src={item.imageUrl} alt={item.name} fill className="object-cover" />
                 ) : (
-                  <Image src="/logo.png" alt="" fill className="object-contain p-2 opacity-40" />
+                  <Image src="/logo.png" alt="" fill className="object-contain p-2 opacity-30" />
                 )}
               </div>
               <div className="flex flex-1 flex-col justify-between">
                 <div>
-                  <Link href={`/shop/${item.slug}`} className="font-semibold text-navy hover:text-cyan">
+                  <Link
+                    href={`/shop/${item.slug}`}
+                    className="font-semibold text-af-text transition-colors hover:text-af-cyan"
+                  >
                     {item.name}
                   </Link>
-                  <p className="text-sm text-slate-500">{formatPrice(item.priceCents)} each</p>
+                  <p className="text-sm text-af-muted">{formatPrice(item.priceCents)} each</p>
                 </div>
                 <div className="flex items-center gap-3">
                   <button
                     type="button"
                     onClick={() => updateQuantity(item.productId, item.quantity - 1)}
-                    className="rounded-full border p-1 hover:bg-slate-50"
+                    className="flex h-8 w-8 items-center justify-center border border-af-cyan/20 text-af-muted transition-colors hover:border-af-cyan/40 hover:text-af-text"
                   >
-                    <Minus className="h-4 w-4" />
+                    <Minus className="h-3.5 w-3.5" />
                   </button>
-                  <span className="w-8 text-center font-medium">{item.quantity}</span>
+                  <span className="w-8 text-center text-sm font-medium">{item.quantity}</span>
                   <button
                     type="button"
                     onClick={() => updateQuantity(item.productId, item.quantity + 1)}
-                    className="rounded-full border p-1 hover:bg-slate-50"
+                    className="flex h-8 w-8 items-center justify-center border border-af-cyan/20 text-af-muted transition-colors hover:border-af-cyan/40 hover:text-af-text"
                   >
-                    <Plus className="h-4 w-4" />
+                    <Plus className="h-3.5 w-3.5" />
                   </button>
                   <button
                     type="button"
                     onClick={() => removeItem(item.productId)}
-                    className="ml-auto text-slate-400 hover:text-red-600"
+                    className="ml-auto text-af-muted transition-colors hover:text-red-400"
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>
                 </div>
               </div>
-              <p className="font-bold text-navy">
+              <p className="font-bold text-af-text">
                 {formatPrice(item.priceCents * item.quantity)}
               </p>
             </div>
           ))}
         </div>
 
-        <div className="h-fit rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="text-lg font-bold text-navy">Order summary</h2>
-          <div className="mt-4 space-y-2 border-b border-slate-100 pb-4 text-sm">
+        <div className="h-fit border border-af-cyan/15 bg-af-surface p-6">
+          <h2 className="text-lg font-bold text-af-text">Order summary</h2>
+          <div className="mt-4 space-y-2 border-b border-af-cyan/10 pb-4 text-sm">
             <div className="flex justify-between">
-              <span className="text-slate-600">Subtotal</span>
-              <span className="font-medium">{formatPrice(totalCents())}</span>
+              <span className="text-af-muted">Subtotal</span>
+              <span className="font-medium text-af-text">{formatPrice(totalCents())}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-slate-600">Shipping</span>
-              <span className="font-medium">Calculated at checkout</span>
+              <span className="text-af-muted">Shipping</span>
+              <span className="font-medium text-af-muted">At checkout</span>
             </div>
           </div>
           <div className="mt-4 flex justify-between text-lg font-bold">
-            <span>Total</span>
-            <span className="text-navy">{formatPrice(totalCents())}</span>
+            <span className="text-af-text">Total</span>
+            <span className="text-af-cyan">{formatPrice(totalCents())}</span>
           </div>
 
           <div className="mt-6 space-y-2">
@@ -133,17 +136,17 @@ export default function CartPage() {
             />
           </div>
 
-          {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
+          {error && <p className="mt-4 text-sm text-red-400">{error}</p>}
 
           <Button
-            variant="cyan"
+            variant="primary"
             className="mt-6 w-full"
             onClick={checkout}
             disabled={loading}
           >
             {loading ? "Redirecting to Stripe…" : "Checkout with Stripe"}
           </Button>
-          <p className="mt-3 text-center text-xs text-slate-400">
+          <p className="mt-3 text-center text-xs text-af-muted">
             Secure payment powered by Stripe
           </p>
         </div>

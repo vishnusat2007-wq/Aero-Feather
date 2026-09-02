@@ -10,24 +10,26 @@ export default async function LoginPage({
   const { next } = await searchParams;
 
   return (
-    <div className="mx-auto flex min-h-[70vh] max-w-md flex-col justify-center px-4 py-12 sm:px-6">
+    <div className="mx-auto flex min-h-[70vh] max-w-md flex-col justify-center px-4 py-16 sm:px-6">
       <div className="mb-8 text-center">
-        <Image src="/logo.png" alt="" width={72} height={72} className="mx-auto rounded-full" />
-        <h1 className="mt-4 text-2xl font-bold text-navy">Welcome back</h1>
-        <p className="mt-2 text-sm text-slate-600">
+        <Image src="/logo.png" alt="" width={64} height={64} className="mx-auto" />
+        <h1 className="mt-5 text-2xl font-bold tracking-tight text-af-text">Welcome back</h1>
+        <p className="mt-2 text-sm text-af-muted">
           Sign in to track orders and checkout faster
         </p>
       </div>
-      <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
+      <div className="border border-af-cyan/15 bg-af-surface p-8">
         <LoginForm />
       </div>
       {next && (
-        <p className="mt-4 text-center text-xs text-slate-400">
+        <p className="mt-4 text-center text-xs text-af-muted">
           You&apos;ll be redirected to {next} after signing in
         </p>
       )}
-      <p className="mt-6 text-center text-sm text-slate-500">
-        <Link href="/" className="text-cyan hover:underline">← Back to store</Link>
+      <p className="mt-6 text-center text-sm text-af-muted">
+        <Link href="/" className="text-af-cyan transition-colors hover:text-af-text">
+          ← Back to store
+        </Link>
       </p>
     </div>
   );

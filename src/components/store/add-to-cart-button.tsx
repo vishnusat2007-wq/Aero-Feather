@@ -12,7 +12,7 @@ export function AddToCartButton({ product }: { product: Product }) {
 
   return (
     <Button
-      variant="cyan"
+      variant="primary"
       size="lg"
       onClick={() => {
         addItem({
@@ -27,7 +27,7 @@ export function AddToCartButton({ product }: { product: Product }) {
       }}
     >
       <ShoppingBag className="h-5 w-5" />
-      {added ? "Added to cart!" : "Add to cart"}
+      {added ? "Added to cart" : "Add to Cart"}
     </Button>
   );
 }

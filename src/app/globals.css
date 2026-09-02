@@ -1,20 +1,128 @@
 @import "tailwindcss";
 
 @theme inline {
-  --color-navy: #0f2d52;
-  --color-navy-light: #1a4a7a;
-  --color-cyan: #29b6e8;
-  --color-cyan-light: #5dd0f5;
-  --font-sans: var(--font-inter);
+  --color-af-bg: #070d1f;
+  --color-af-bg-secondary: #0b1430;
+  --color-af-surface: #101b38;
+  --color-af-surface-elevated: #142449;
+  --color-af-cyan: #20b6e8;
+  --color-af-blue: #168cd8;
+  --color-af-text: #f7f9fc;
+  --color-af-muted: #8b9cb8;
+  --color-af-border: rgba(32, 182, 232, 0.12);
+  --font-sans: var(--font-jakarta);
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
   font-family: var(--font-sans), system-ui, sans-serif;
-  color: var(--color-navy);
+  background: var(--color-af-bg);
+  color: var(--color-af-text);
+  -webkit-font-smoothing: antialiased;
 }
 
-.swoosh-bg {
+::selection {
+  background: rgb(32 182 232 / 0.35);
+  color: #fff;
+}
+
+@keyframes af-glow-pulse {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(1.05); }
+}
+
+@keyframes af-flight-dash {
+  to { stroke-dashoffset: -120; }
+}
+
+@keyframes af-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-12px); }
+}
+
+@keyframes af-fade-up {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes af-shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+.animate-af-glow { animation: af-glow-pulse 4s ease-in-out infinite; }
+.animate-af-float { animation: af-float 6s ease-in-out infinite; }
+.animate-af-fade-up { animation: af-fade-up 0.7s ease-out forwards; }
+
+.af-gradient-text {
+  background: linear-gradient(135deg, #20b6e8 0%, #168cd8 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.af-grid-bg {
   background-image:
-    radial-gradient(circle at 10% 20%, rgb(41 182 232 / 0.12), transparent 40%),
-    radial-gradient(circle at 90% 10%, rgb(15 45 82 / 0.08), transparent 35%);
+    linear-gradient(rgb(32 182 232 / 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(32 182 232 / 0.03) 1px, transparent 1px);
+  background-size: 64px 64px;
+}
+
+.af-radial-hero {
+  background:
+    radial-gradient(ellipse 80% 60% at 70% 40%, rgb(32 182 232 / 0.08), transparent 60%),
+    radial-gradient(ellipse 50% 40% at 20% 80%, rgb(22 140 216 / 0.06), transparent 50%),
+    #070d1f;
+}
+
+.af-card-hover {
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.35s ease;
+}
+
+.af-card-hover:hover {
+  transform: translateY(-4px);
+  border-color: rgb(32 182 232 / 0.35);
+  box-shadow:
+    0 0 0 1px rgb(32 182 232 / 0.1),
+    0 24px 48px -12px rgb(0 0 0 / 0.5),
+    0 0 40px -8px rgb(32 182 232 / 0.15);
+}
+
+.af-btn-primary {
+  background: linear-gradient(135deg, #20b6e8, #168cd8);
+  color: #070d1f;
+  font-weight: 600;
+  transition: all 0.25s ease;
+}
+
+.af-btn-primary:hover {
+  box-shadow: 0 0 24px rgb(32 182 232 / 0.45);
+  transform: translateY(-1px);
+}
+
+.af-btn-ghost {
+  border: 1px solid rgb(32 182 232 / 0.3);
+  color: #f7f9fc;
+  background: rgb(16 27 56 / 0.5);
+  transition: all 0.25s ease;
+}
+
+.af-btn-ghost:hover {
+  border-color: rgb(32 182 232 / 0.6);
+  background: rgb(20 36 73 / 0.8);
+}
+
+.section-divider {
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgb(32 182 232 / 0.25) 50%,
+    transparent
+  );
 }
