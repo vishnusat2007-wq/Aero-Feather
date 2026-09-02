@@ -7,19 +7,20 @@ import type { HighlightTarget } from "@/components/store/shuttlecock-timeline";
 
 const FEATHER_COUNT = 16;
 const BASE_RADIUS = 0.145;
-const TOP_RADIUS = 0.315;
-const FEATHER_HEIGHT = 0.72;
+const TOP_RADIUS = 0.325;
+const FEATHER_HEIGHT = 0.78;
 
 function createVaneGeometry() {
   const shape = new THREE.Shape();
-  shape.moveTo(-0.012, 0);
-  shape.bezierCurveTo(-0.075, 0.10, -0.092, 0.31, -0.075, 0.50);
-  shape.bezierCurveTo(-0.058, 0.64, -0.026, 0.72, 0, 0.75);
-  shape.bezierCurveTo(0.026, 0.72, 0.058, 0.64, 0.075, 0.50);
-  shape.bezierCurveTo(0.092, 0.31, 0.075, 0.10, 0.012, 0);
+  // The vane begins above the binding, leaving the lower quill exposed.
+  // A slim, gently asymmetric silhouette prevents the overlapping "panel" look.
+  shape.moveTo(-0.009, 0.245);
+  shape.bezierCurveTo(-0.030, 0.31, -0.050, 0.46, -0.052, 0.61);
+  shape.bezierCurveTo(-0.050, 0.70, -0.022, 0.765, 0, 0.79);
+  shape.bezierCurveTo(0.021, 0.762, 0.045, 0.69, 0.047, 0.59);
+  shape.bezierCurveTo(0.045, 0.45, 0.028, 0.31, 0.009, 0.245);
   shape.closePath();
   const geo = new THREE.ShapeGeometry(shape, 20);
-  geo.translate(0, 0.08, 0);
   return geo;
 }
 
@@ -63,16 +64,16 @@ function Feather({ index, bloom, highlight, texture, geometry }: FeatherProps) {
   const open = bloom / 0.12;
   const baseX = radial.x * BASE_RADIUS;
   const baseZ = radial.z * BASE_RADIUS;
-  const outward = Math.atan2(TOP_RADIUS - BASE_RADIUS, FEATHER_HEIGHT) + open * 0.055;
+  const outward = Math.atan2(TOP_RADIUS - BASE_RADIUS, FEATHER_HEIGHT) + open * 0.035;
   const lit = highlight === "feathers" && index % 3 === 0;
 
   return (
     <group position={[baseX, -0.02, baseZ]} rotation={[0, -angle + Math.PI / 2, -outward]}>
-      <mesh position={[0, 0.30, 0]} castShadow>
-        <cylinderGeometry args={[0.004, 0.006, 0.64, 8]} />
+      <mesh position={[0, 0.38, 0]} castShadow>
+        <cylinderGeometry args={[0.0035, 0.006, 0.78, 8]} />
         <meshStandardMaterial color="#d5bd91" roughness={0.8} />
       </mesh>
-      <mesh geometry={geometry} position={[0, 0.12, 0]} castShadow renderOrder={index}>
+      <mesh geometry={geometry} castShadow renderOrder={index}>
         <meshStandardMaterial map={texture} color={lit ? "#f2fbff" : "#fffdf7"} roughness={0.9} side={THREE.DoubleSide}
           emissive={lit ? "#20b6e8" : "#000000"} emissiveIntensity={lit ? 0.22 : 0} transparent opacity={0.96} />
       </mesh>
@@ -93,7 +94,7 @@ export function ShuttlecockModel({ bloom, highlight, floatY }: ShuttlecockModelP
   const geometryGlow = highlight === "geometry";
 
   return (
-    <group ref={rootRef} position={[0, -0.18, 0]} rotation={[0.03, 0.25, -0.06]} scale={0.9}>
+    <group ref={rootRef} position={[0, -0.12, 0]} rotation={[0.03, 0.25, -0.06]} scale={0.86}>
       {/* Realistic rounded cork base: flat impact face below, feathers above. */}
       <mesh position={[0, -0.20, 0]} castShadow receiveShadow>
         <cylinderGeometry args={[0.135, 0.155, 0.18, 64]} />
