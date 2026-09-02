@@ -63,7 +63,7 @@ function Feather({ index, bloom, highlight, texture, geometry }: FeatherProps) {
   const baseX = radial.x * BASE_RADIUS;
   const baseZ = radial.z * BASE_RADIUS;
   const outward = Math.atan2(TOP_RADIUS - BASE_RADIUS, FEATHER_HEIGHT) + open * 0.045;
-  const lit = highlight === "feathers" && index % 3 === 0;
+  const lit = highlight === "feathers" && (index % 2 === 0 || index === 3 || index === 9);
 
   return (
     <group position={[baseX, -0.045, baseZ]} rotation={[0, -angle + Math.PI / 2, -outward]}>
@@ -92,7 +92,7 @@ export function ShuttlecockModel({ bloom, highlight, floatY }: ShuttlecockModelP
   const geometryGlow = highlight === "geometry";
 
   return (
-    <group ref={rootRef} position={[0, -0.07, 0]} rotation={[0.03, 0.25, -0.06]} scale={1.02}>
+    <group ref={rootRef} position={[0, -0.12, 0]} rotation={[0.02, 0.2, -0.04]} scale={1.18}>
       {/* Realistic rounded cork base: flat impact face below, feathers above. */}
       <mesh position={[0, -0.18, 0]} castShadow receiveShadow>
         <cylinderGeometry args={[0.155, 0.178, 0.24, 64]} />

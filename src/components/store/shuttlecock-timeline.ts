@@ -59,6 +59,10 @@ export function getBloom(phase: ShuttlePhase, local: number): number {
 }
 
 export function getHighlight(phase: ShuttlePhase, local: number): HighlightTarget {
+  if (phase === "open") {
+    if (local < 0.5) return "feathers";
+    return "geometry";
+  }
   if (phase !== "explain") return null;
   if (local < 0.25) return "feathers";
   if (local < 0.5) return "geometry";
@@ -120,8 +124,8 @@ export const CALLOUTS = [
     num: "01",
     title: "SELECTED GOOSE FEATHERS",
     desc: "Carefully selected feathers for consistent aerodynamic response.",
-    anchorPct: { x: 54, y: 36 },
-    labelPct: { x: 6, y: 24 },
+    anchorPct: { x: 52, y: 32 },
+    labelPct: { x: 8, y: 20 },
     align: "left" as const,
   },
   {
@@ -129,8 +133,8 @@ export const CALLOUTS = [
     num: "02",
     title: "PRECISE FEATHER GEOMETRY",
     desc: "Consistent spacing and angle designed for stable rotation.",
-    anchorPct: { x: 56, y: 46 },
-    labelPct: { x: 94, y: 18 },
+    anchorPct: { x: 54, y: 44 },
+    labelPct: { x: 92, y: 16 },
     align: "right" as const,
   },
   {
@@ -138,8 +142,8 @@ export const CALLOUTS = [
     num: "03",
     title: "REINFORCED BINDING",
     desc: "Designed to maintain structure throughout demanding rallies.",
-    anchorPct: { x: 50, y: 58 },
-    labelPct: { x: 6, y: 62 },
+    anchorPct: { x: 50, y: 56 },
+    labelPct: { x: 8, y: 58 },
     align: "left" as const,
   },
   {
@@ -147,8 +151,8 @@ export const CALLOUTS = [
     num: "04",
     title: "PRECISION CORK BASE",
     desc: "Balanced impact response and dependable shuttle behaviour.",
-    anchorPct: { x: 48, y: 72 },
-    labelPct: { x: 94, y: 78 },
+    anchorPct: { x: 50, y: 72 },
+    labelPct: { x: 92, y: 76 },
     align: "right" as const,
   },
 ];
