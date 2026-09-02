@@ -6,19 +6,17 @@ import { useFrame } from "@react-three/fiber";
 import type { HighlightTarget } from "@/components/store/shuttlecock-timeline";
 
 const FEATHER_COUNT = 16;
-const BASE_RADIUS = 0.145;
-const TOP_RADIUS = 0.325;
-const FEATHER_HEIGHT = 0.78;
+const BASE_RADIUS = 0.165;
+const TOP_RADIUS = 0.46;
+const FEATHER_HEIGHT = 0.74;
 
 function createVaneGeometry() {
   const shape = new THREE.Shape();
-  // The vane begins above the binding, leaving the lower quill exposed.
-  // A slim, gently asymmetric silhouette prevents the overlapping "panel" look.
-  shape.moveTo(-0.009, 0.245);
-  shape.bezierCurveTo(-0.030, 0.31, -0.050, 0.46, -0.052, 0.61);
-  shape.bezierCurveTo(-0.050, 0.70, -0.022, 0.765, 0, 0.79);
-  shape.bezierCurveTo(0.021, 0.762, 0.045, 0.69, 0.047, 0.59);
-  shape.bezierCurveTo(0.045, 0.45, 0.028, 0.31, 0.009, 0.245);
+  shape.moveTo(-0.012, 0.21);
+  shape.bezierCurveTo(-0.048, 0.29, -0.072, 0.43, -0.075, 0.60);
+  shape.bezierCurveTo(-0.074, 0.69, -0.050, 0.745, 0, 0.77);
+  shape.bezierCurveTo(0.050, 0.745, 0.074, 0.69, 0.075, 0.60);
+  shape.bezierCurveTo(0.072, 0.43, 0.048, 0.29, 0.012, 0.21);
   shape.closePath();
   const geo = new THREE.ShapeGeometry(shape, 20);
   return geo;
@@ -64,13 +62,13 @@ function Feather({ index, bloom, highlight, texture, geometry }: FeatherProps) {
   const open = bloom / 0.12;
   const baseX = radial.x * BASE_RADIUS;
   const baseZ = radial.z * BASE_RADIUS;
-  const outward = Math.atan2(TOP_RADIUS - BASE_RADIUS, FEATHER_HEIGHT) + open * 0.035;
+  const outward = Math.atan2(TOP_RADIUS - BASE_RADIUS, FEATHER_HEIGHT) + open * 0.045;
   const lit = highlight === "feathers" && index % 3 === 0;
 
   return (
-    <group position={[baseX, -0.02, baseZ]} rotation={[0, -angle + Math.PI / 2, -outward]}>
-      <mesh position={[0, 0.38, 0]} castShadow>
-        <cylinderGeometry args={[0.0035, 0.006, 0.78, 8]} />
+    <group position={[baseX, -0.045, baseZ]} rotation={[0, -angle + Math.PI / 2, -outward]}>
+      <mesh position={[0, 0.37, 0]} castShadow>
+        <cylinderGeometry args={[0.0045, 0.007, 0.76, 8]} />
         <meshStandardMaterial color="#d5bd91" roughness={0.8} />
       </mesh>
       <mesh geometry={geometry} castShadow renderOrder={index}>
@@ -94,20 +92,20 @@ export function ShuttlecockModel({ bloom, highlight, floatY }: ShuttlecockModelP
   const geometryGlow = highlight === "geometry";
 
   return (
-    <group ref={rootRef} position={[0, -0.12, 0]} rotation={[0.03, 0.25, -0.06]} scale={0.86}>
+    <group ref={rootRef} position={[0, -0.07, 0]} rotation={[0.03, 0.25, -0.06]} scale={1.02}>
       {/* Realistic rounded cork base: flat impact face below, feathers above. */}
-      <mesh position={[0, -0.20, 0]} castShadow receiveShadow>
-        <cylinderGeometry args={[0.135, 0.155, 0.18, 64]} />
+      <mesh position={[0, -0.18, 0]} castShadow receiveShadow>
+        <cylinderGeometry args={[0.155, 0.178, 0.24, 64]} />
         <meshStandardMaterial color="#eee3d2" roughness={0.88} emissive={cork ? "#20b6e8" : "#000"} emissiveIntensity={cork ? 0.14 : 0} />
       </mesh>
-      <mesh position={[0, -0.30, 0]} scale={[1, 0.55, 1]} castShadow>
-        <sphereGeometry args={[0.155, 64, 32]} />
+      <mesh position={[0, -0.315, 0]} scale={[1, 0.5, 1]} castShadow>
+        <sphereGeometry args={[0.178, 64, 32]} />
         <meshStandardMaterial color="#f5ecdf" roughness={0.82} emissive={cork ? "#20b6e8" : "#000"} emissiveIntensity={cork ? 0.14 : 0} />
       </mesh>
 
       {/* Green retaining band and two thread bindings. */}
-      <mesh position={[0, -0.085, 0]} rotation={[Math.PI / 2, 0, 0]} castShadow>
-        <torusGeometry args={[0.142, 0.012, 16, 72]} />
+      <mesh position={[0, -0.048, 0]} rotation={[Math.PI / 2, 0, 0]} castShadow>
+        <torusGeometry args={[0.162, 0.013, 16, 72]} />
         <meshStandardMaterial color="#174f3d" roughness={0.52} emissive={binding ? "#20b6e8" : "#000"} emissiveIntensity={binding ? 0.22 : 0} />
       </mesh>
       {[0.11, 0.22].map((y) => (
