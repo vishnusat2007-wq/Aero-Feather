@@ -33,6 +33,28 @@ export async function updateProfileAction(formData: FormData) {
   revalidatePath("/account");
 }
 
+export async function updatePasswordAction(formData: FormData) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) throw new Error("Not signed in");
+
+  const password = formData.get("password")?.toString() ?? "";
+  const confirm = formData.get("confirm_password")?.toString() ?? "";
+
+  if (password.length < 6) {
+    throw new Error("Password must be at least 6 characters");
+  }
+  if (password !== confirm) {
+    throw new Error("Passwords do not match");
+  }
+
+  const { error } = await supabase.auth.updateUser({ password });
+  if (error) throw new Error(error.message);
+}
+
 export async function syncProfileAfterAuth(userId: string) {
   const supabase = await createClient();
   const {

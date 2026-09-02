@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { ChangePasswordForm } from "@/components/store/change-password-form";
 import { updateProfileAction } from "@/lib/auth/actions";
 import { formatDate, formatPrice } from "@/lib/format";
 import { getCurrentProfile, getUserOrders } from "@/lib/data";
@@ -85,6 +86,14 @@ export default async function AccountPage({
             Save profile
           </Button>
         </form>
+      </section>
+
+      <section className="mb-12 border border-af-cyan/10 bg-af-surface p-6">
+        <h2 className="mb-4 text-lg font-bold text-af-text">Password</h2>
+        <p className="mb-4 text-sm text-af-muted">
+          Change your sign-in password. Use at least 6 characters.
+        </p>
+        <ChangePasswordForm />
       </section>
 
       <h2 className="mb-5 text-xl font-bold text-af-text">Order history</h2>
