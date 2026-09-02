@@ -14,4 +14,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - **Dev server**: `npm run dev` — available in the `dev` terminal on port 3000.
 - **Build**: `npm run build` — verify production builds before opening PRs.
 - **Lint**: `npm run lint`.
-- No secrets or external services are required for the default scaffold.
+- **Storefront**: `/` home, `/shop` catalogue, `/cart` checkout, `/login` auth.
+- **Admin**: `/admin` (requires `af_profiles.role = 'admin'` in Supabase).
+- **Stripe webhook**: `/api/webhooks/stripe` — needs `STRIPE_WEBHOOK_SECRET` and `SUPABASE_SERVICE_ROLE_KEY`.
+- Required secrets: Supabase URL/keys, Stripe keys, `NEXT_PUBLIC_APP_URL`.
