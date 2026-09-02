@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
-import dynamic from "next/dynamic";
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 import {
   CALLOUTS,
@@ -12,16 +12,10 @@ import {
   getHeroStage,
   getHighlight,
   getPhase,
-  getSceneRotation,
   getTrajectoryProgress,
   type HeroStage,
   type HighlightTarget,
 } from "@/components/store/shuttlecock-timeline";
-
-const ShuttlecockCanvas = dynamic(
-  () => import("@/components/store/shuttlecock-canvas").then((m) => m.ShuttlecockCanvas),
-  { ssr: false, loading: () => <div className="h-full w-full animate-pulse rounded-full bg-af-cyan/5" /> },
-);
 
 export type { HeroStage };
 
@@ -69,7 +63,6 @@ export function ShuttlecockShowcase({ onStageChange }: ShuttlecockShowcaseProps)
   const bloom = reducedMotion ? 0.06 : getBloom(phase, local);
   const autoHighlight = getHighlight(phase, local);
   const highlight = hovered ?? autoHighlight;
-  const rotationY = reducedMotion ? 0.85 : getSceneRotation(phase, local, time);
   const enterOffset = reducedMotion ? [0, 0, 0] as [number, number, number] : getEnterOffset(phase, local);
   const trajectory = getTrajectoryProgress(phase, local);
   const floatY = reducedMotion ? 0 : Math.sin(time * 0.55) * 0.012;
@@ -122,14 +115,20 @@ export function ShuttlecockShowcase({ onStageChange }: ShuttlecockShowcaseProps)
         />
       </svg>
 
-      <div className="relative h-[88%] w-full">
-        <ShuttlecockCanvas
-          bloom={bloom}
-          highlight={highlight}
-          rotationY={rotationY}
-          enterOffset={enterOffset}
-          floatY={floatY}
-          mouseTilt={tilt}
+      <div
+        className="relative h-[92%] w-full transition-[filter] duration-500"
+        style={{
+          transform: `translate3d(${enterOffset[0] * 90 + tilt.y * 12}px, ${enterOffset[1] * -80 + floatY * 90 + tilt.x * 8}px, 0) rotate(${reducedMotion ? -3 : -3 + Math.sin(time * 0.42) * 1.7}deg) scaleX(${1 + bloom * 0.28})`,
+          filter: highlight ? "drop-shadow(0 20px 26px rgba(32,182,232,.22))" : "drop-shadow(0 22px 24px rgba(7,17,31,.18))",
+        }}
+      >
+        <Image
+          src="/shuttlecock-hero-real.png"
+          alt="Aero Feather tournament goose-feather shuttlecock"
+          fill
+          priority
+          sizes="(min-width: 1024px) 48vw, 88vw"
+          className="object-contain"
         />
       </div>
 
