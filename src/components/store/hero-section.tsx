@@ -5,89 +5,98 @@ import { useCallback, useState } from "react";
 import { FadeIn } from "@/components/store/fade-in";
 import { FlightCtaButton } from "@/components/store/flight-cta-button";
 import {
-  ShuttlecockShowcase,
+  CHAPTERS,
   type HeroStage,
-} from "@/components/store/shuttlecock-showcase";
+} from "@/components/store/shuttlecock-scroll-story";
+import { ShuttlecockScrollShowcase } from "@/components/store/shuttlecock-scroll-showcase";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-const STAGES: HeroStage[] = [
-  { num: "01", label: "FLIGHT" },
-  { num: "02", label: "FEATHER" },
-  { num: "03", label: "DURABILITY" },
-  { num: "04", label: "CONTROL" },
-];
-
 export function HeroSection() {
-  const [stage, setStage] = useState<HeroStage>(STAGES[0]);
+  const [stage, setStage] = useState<HeroStage>({ num: "01", label: "FLIGHT" });
+  const [chapterIdx, setChapterIdx] = useState(0);
+  const chapter = CHAPTERS[chapterIdx];
+
   const handleStageChange = useCallback((next: HeroStage) => setStage(next), []);
+  const handleChapterChange = useCallback((idx: number) => setChapterIdx(idx), []);
 
   return (
-    <div className="relative mx-auto grid w-full max-w-7xl items-center gap-10 px-4 py-20 sm:px-6 lg:grid-cols-[1fr_1.1fr] lg:gap-12 lg:py-28">
-      <div className="relative z-10 max-w-xl">
-        <FadeIn>
-          <p className="mb-6 inline-flex items-center gap-2 border border-af-cyan/25 bg-af-surface/50 px-4 py-1.5 text-[11px] font-semibold tracking-[0.22em] text-af-cyan uppercase backdrop-blur-sm">
-            <span className="h-1.5 w-1.5 rounded-full bg-af-cyan" />
-            Engineered for Irish Badminton
-          </p>
-        </FadeIn>
+    <section className="af-radial-hero af-grid-bg relative overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-af-bg pointer-events-none" />
 
-        <FadeIn delay={80}>
-          <h1 className="text-[clamp(2.5rem,6vw,4.25rem)] font-extrabold leading-[1.05] tracking-[-0.03em] text-af-text">
-            ENGINEERED
-            <br />
-            FOR <span className="af-gradient-text">FLIGHT.</span>
-          </h1>
-        </FadeIn>
+      <div className="relative mx-auto grid max-w-7xl lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
+        {/* Left — sticky copy while scrolling through shuttle story */}
+        <div className="relative z-20 px-4 py-16 sm:px-6 lg:sticky lg:top-0 lg:flex lg:h-[100svh] lg:flex-col lg:justify-center lg:py-20">
+          <FadeIn>
+            <p className="mb-6 inline-flex items-center gap-2 border border-af-cyan/25 bg-af-surface/50 px-4 py-1.5 text-[11px] font-semibold tracking-[0.22em] text-af-cyan uppercase backdrop-blur-sm">
+              <span className="h-1.5 w-1.5 rounded-full bg-af-cyan" />
+              Engineered for Irish Badminton
+            </p>
+          </FadeIn>
 
-        <FadeIn delay={160}>
-          <p className="mt-6 max-w-md text-base leading-relaxed text-af-muted sm:text-lg">
-            Tournament-grade goose feather shuttlecocks engineered for consistent
-            flight, durability and performance — developed for clubs and competitive
-            players across Ireland.
-          </p>
-        </FadeIn>
+          <FadeIn delay={80}>
+            <h1 className="text-[clamp(2.25rem,5.5vw,4rem)] font-extrabold leading-[1.05] tracking-[-0.03em] text-af-text">
+              ENGINEERED
+              <br />
+              FOR <span className="af-gradient-text">FLIGHT.</span>
+            </h1>
+          </FadeIn>
 
-        {/* Stage indicator — synced to shuttlecock animation */}
-        <FadeIn delay={200}>
-          <div className="mt-8 flex items-center gap-4">
-            <div className="flex items-baseline gap-2 border-l-2 border-af-cyan/40 pl-4 transition-all duration-700">
+          <FadeIn delay={160}>
+            <p className="mt-6 max-w-md text-base leading-relaxed text-af-muted sm:text-lg">
+              Tournament-grade goose feather shuttlecocks engineered for consistent
+              flight, durability and performance — developed for clubs and competitive
+              players across Ireland.
+            </p>
+          </FadeIn>
+
+          {/* Scroll-synced chapter copy */}
+          <div className="mt-8 min-h-[120px]">
+            <div className="flex items-baseline gap-2 border-l-2 border-af-cyan/40 pl-4 transition-all duration-500">
               <span className="text-lg font-bold tabular-nums text-af-cyan">{stage.num}</span>
               <span className="text-[11px] font-semibold tracking-[0.2em] text-af-muted">/</span>
-              <span
-                key={stage.label}
-                className="text-[11px] font-bold tracking-[0.2em] text-af-text uppercase animate-af-fade-up"
-              >
+              <span className="text-[11px] font-bold tracking-[0.2em] text-af-text uppercase">
                 {stage.label}
               </span>
             </div>
-            <div className="hidden gap-1 sm:flex">
-              {STAGES.map((s) => (
+            <div key={chapter.id} className="mt-4 animate-af-fade-up">
+              <p className="text-sm font-bold tracking-wide text-af-text">{chapter.title}</p>
+              <p className="mt-2 max-w-sm text-sm leading-relaxed text-af-muted">{chapter.desc}</p>
+            </div>
+            <div className="mt-4 flex gap-1">
+              {CHAPTERS.map((c, i) => (
                 <span
-                  key={s.num}
+                  key={c.id}
                   className={cn(
-                    "h-1 w-5 rounded-full transition-all duration-500",
-                    s.num === stage.num ? "bg-af-cyan" : "bg-af-cyan/15",
+                    "h-1 flex-1 max-w-8 rounded-full transition-all duration-500",
+                    i === chapterIdx ? "bg-af-cyan" : "bg-af-cyan/15",
                   )}
                 />
               ))}
             </div>
+            <p className="mt-3 text-[10px] font-medium tracking-[0.18em] text-af-muted uppercase lg:hidden">
+              Scroll to explore the shuttlecock →
+            </p>
           </div>
-        </FadeIn>
 
-        <FadeIn delay={240}>
-          <div className="mt-10 flex flex-wrap gap-4">
-            <FlightCtaButton href="/shop">Shop Shuttlecocks</FlightCtaButton>
-            <Button variant="ghost" size="lg" asChild>
-              <Link href="/#about">Discover Aero Feather</Link>
-            </Button>
-          </div>
-        </FadeIn>
+          <FadeIn delay={240}>
+            <div className="mt-8 flex flex-wrap gap-4">
+              <FlightCtaButton href="/shop">Shop Shuttlecocks</FlightCtaButton>
+              <Button variant="ghost" size="lg" asChild>
+                <Link href="/#about">Discover Aero Feather</Link>
+              </Button>
+            </div>
+          </FadeIn>
+        </div>
+
+        {/* Right — scroll-driven 3D shuttlecock story */}
+        <div className="relative z-10 min-h-[420vh] sm:min-h-[480vh]">
+          <ShuttlecockScrollShowcase
+            onStageChange={handleStageChange}
+            onChapterChange={handleChapterChange}
+          />
+        </div>
       </div>
-
-      <FadeIn delay={120} className="relative z-10">
-        <ShuttlecockShowcase onStageChange={handleStageChange} />
-      </FadeIn>
-    </div>
+    </section>
   );
 }

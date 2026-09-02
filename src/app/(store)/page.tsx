@@ -11,7 +11,6 @@ import {
   Zap,
 } from "lucide-react";
 import { FadeIn } from "@/components/store/fade-in";
-import { HeroBackground } from "@/components/store/hero-background";
 import { HeroSection } from "@/components/store/hero-section";
 import { ProductCard } from "@/components/store/product-card";
 import { Button } from "@/components/ui/button";
@@ -80,13 +79,7 @@ export default async function HomePage() {
 
   return (
     <>
-      {/* Hero */}
-      <section className="af-radial-hero af-grid-bg relative flex min-h-[90vh] items-center overflow-hidden">
-        <HeroBackground />
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-af-bg" />
-
-        <HeroSection />
-      </section>
+      <HeroSection />
 
       {/* Trust strip */}
       <section className="border-y border-af-cyan/10 bg-af-bg-secondary/80">
