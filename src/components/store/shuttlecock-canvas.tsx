@@ -48,7 +48,7 @@ export function ShuttlecockCanvas(props: SceneProps) {
       shadows
       dpr={[1, 1.75]}
       gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }}
-      camera={{ position: [0.1, 0.16, 2.55], fov: 31, near: 0.01, far: 10 }}
+      camera={{ position: [0.1, 0.13, 2.35], fov: 31, near: 0.01, far: 10 }}
       style={{ background: "transparent" }}
     >
       <Suspense fallback={null}>
