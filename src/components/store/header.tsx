@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Menu, ShoppingBag, User, X } from "lucide-react";
 import { useEffect, useState } from "react";
-import { BrandLockup } from "@/components/store/logo";
+import { LogoMark } from "@/components/store/logo";
 import { NavLink } from "@/components/store/nav-link";
 import { ThemeToggle } from "@/components/store/theme-toggle";
 import { cn } from "@/lib/utils";
@@ -55,7 +55,7 @@ export function StoreHeader() {
       >
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:h-[4.5rem]">
           <Link href="/" className="group transition-opacity hover:opacity-90">
-            <BrandLockup markSize={40} />
+            <LogoMark size={44} glow priority className="transition-transform duration-300 group-hover:scale-[1.03]" />
           </Link>
 
           <nav className="hidden items-center gap-8 lg:flex">
@@ -73,6 +73,13 @@ export function StoreHeader() {
               className="flex h-9 w-9 items-center justify-center rounded-lg text-af-muted transition-all hover:bg-af-surface hover:text-af-text"
             >
               <User className="h-[18px] w-[18px]" strokeWidth={1.75} />
+            </Link>
+
+            <Link
+              href="/signup"
+              className="hidden text-[13px] font-medium text-af-muted transition-colors hover:text-af-cyan sm:inline"
+            >
+              Sign up
             </Link>
 
             <Link

@@ -8,7 +8,7 @@ type LogoMarkProps = {
   priority?: boolean;
 };
 
-/** Circular Aero Feather emblem — A + swoosh only, no wordmark */
+/** Official Aero Feather circular logo (full mark with wordmark) */
 export function LogoMark({
   className,
   size = 40,
@@ -18,24 +18,19 @@ export function LogoMark({
   return (
     <span
       className={cn(
-        "relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full",
-        "border border-af-cyan/20 bg-af-surface/80",
-        glow && "shadow-[0_0_20px_rgba(32,182,232,0.18)]",
+        "relative inline-flex shrink-0 overflow-hidden rounded-full",
+        glow && "shadow-[0_0_20px_rgba(32,182,232,0.2)]",
         className,
       )}
       style={{ width: size, height: size }}
     >
       <Image
-        src="/logo-mark-circle.png"
-        alt=""
+        src="/logo-circle.png"
+        alt="Aero Feather"
         width={size}
         height={size}
         priority={priority}
-        aria-hidden
-        className={cn(
-          "h-full w-full object-cover",
-          "dark:brightness-[1.1] dark:contrast-[1.06]",
-        )}
+        className="h-full w-full object-cover"
       />
     </span>
   );
@@ -49,7 +44,7 @@ type BrandLockupProps = {
 
 export function BrandLockup({
   className,
-  markSize = 40,
+  markSize = 44,
   showTagline = true,
 }: BrandLockupProps) {
   return (
@@ -58,18 +53,18 @@ export function BrandLockup({
         size={markSize}
         glow
         priority
-        className="transition-transform duration-300 group-hover:scale-[1.04]"
+        className="transition-transform duration-300 group-hover:scale-[1.03]"
       />
-      <div className="hidden sm:block leading-none">
-        <p className="text-[13px] font-bold tracking-[0.2em] text-af-text">
-          AERO <span className="text-af-cyan">FEATHER</span>
-        </p>
-        {showTagline && (
+      {showTagline && (
+        <div className="hidden leading-none sm:block">
+          <p className="text-[13px] font-bold tracking-[0.2em] text-af-text">
+            AERO <span className="text-af-cyan">FEATHER</span>
+          </p>
           <p className="mt-1 text-[9px] font-medium tracking-[0.24em] text-af-muted uppercase">
             Premium Shuttlecocks
           </p>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
