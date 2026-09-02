@@ -11,9 +11,8 @@ import {
   Zap,
 } from "lucide-react";
 import { FadeIn } from "@/components/store/fade-in";
-import { FlightCtaButton } from "@/components/store/flight-cta-button";
 import { HeroBackground } from "@/components/store/hero-background";
-import { ShuttlecockShowcase } from "@/components/store/shuttlecock-showcase";
+import { HeroSection } from "@/components/store/hero-section";
 import { ProductCard } from "@/components/store/product-card";
 import { Button } from "@/components/ui/button";
 import { getFeaturedProducts } from "@/lib/data";
@@ -86,60 +85,7 @@ export default async function HomePage() {
         <HeroBackground />
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-af-bg" />
 
-        <div className="relative mx-auto grid w-full max-w-7xl items-center gap-10 px-4 py-20 sm:px-6 lg:grid-cols-[1fr_1.1fr] lg:gap-12 lg:py-28">
-          <div className="relative z-10 max-w-xl">
-            <FadeIn>
-              <p className="mb-6 inline-flex items-center gap-2 border border-af-cyan/25 bg-af-surface/50 px-4 py-1.5 text-[11px] font-semibold tracking-[0.22em] text-af-cyan uppercase backdrop-blur-sm">
-                <span className="h-1.5 w-1.5 rounded-full bg-af-cyan animate-af-glow" />
-                Engineered for Irish Badminton
-              </p>
-            </FadeIn>
-
-            <FadeIn delay={80}>
-              <h1 className="text-[clamp(2.5rem,6vw,4.25rem)] font-extrabold leading-[1.05] tracking-[-0.03em] text-af-text">
-                ENGINEERED
-                <br />
-                FOR{" "}
-                <span className="af-gradient-text">FLIGHT.</span>
-              </h1>
-            </FadeIn>
-
-            <FadeIn delay={160}>
-              <p className="mt-6 max-w-md text-base leading-relaxed text-af-muted sm:text-lg">
-                Tournament-grade goose feather shuttlecocks engineered for consistent
-                flight, durability and performance — developed for clubs and competitive
-                players across Ireland.
-              </p>
-            </FadeIn>
-
-            {/* Left-side spec strip — balances composition */}
-            <FadeIn delay={200}>
-              <div className="mt-8 flex flex-wrap gap-x-6 gap-y-2 border-l-2 border-af-cyan/30 pl-4">
-                {["Speed 76–78", "Goose Feather", "Cork Base"].map((spec) => (
-                  <span
-                    key={spec}
-                    className="text-[11px] font-semibold tracking-[0.16em] text-af-muted uppercase"
-                  >
-                    {spec}
-                  </span>
-                ))}
-              </div>
-            </FadeIn>
-
-            <FadeIn delay={240}>
-              <div className="mt-10 flex flex-wrap gap-4">
-                <FlightCtaButton href="/shop">Shop Shuttlecocks</FlightCtaButton>
-                <Button variant="ghost" size="lg" asChild>
-                  <Link href="/#about">Discover Aero Feather</Link>
-                </Button>
-              </div>
-            </FadeIn>
-          </div>
-
-          <FadeIn delay={120} className="relative z-10">
-            <ShuttlecockShowcase />
-          </FadeIn>
-        </div>
+        <HeroSection />
       </section>
 
       {/* Trust strip */}
