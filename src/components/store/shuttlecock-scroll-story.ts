@@ -168,19 +168,19 @@ export function getScrollAnim(progress: number): ScrollViewAnim {
     case 2:
       focusY = lerp(-20, -24, eased);
       focusScale = lerp(1.06, 1.1, eased);
-      featherLift = lerp(55, 80, eased);
-      featherSpread = lerp(0.12, 0.2, eased);
-      bindingLift = lerp(0, 25, eased);
-      openAmount = lerp(0.45, 0.65, eased);
+      featherLift = lerp(70, 110, eased);
+      featherSpread = lerp(0.14, 0.22, eased);
+      bindingLift = lerp(0, 35, eased);
+      openAmount = lerp(0.5, 0.7, eased);
       tiltY = 4;
       break;
     case 3:
       focusY = lerp(-24, 8, eased);
       focusScale = lerp(1.1, 1.05, eased);
-      featherLift = lerp(80, 70, eased);
-      featherSpread = lerp(0.2, 0.16, eased);
-      bindingLift = lerp(25, 70, eased);
-      openAmount = lerp(0.65, 0.85, eased);
+      featherLift = lerp(110, 95, eased);
+      featherSpread = lerp(0.22, 0.18, eased);
+      bindingLift = lerp(35, 90, eased);
+      openAmount = lerp(0.7, 0.9, eased);
       tiltY = lerp(4, -2, eased);
       break;
     case 4:
