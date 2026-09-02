@@ -54,8 +54,7 @@ export const CHAPTERS: ChapterInfo[] = [
   },
 ];
 
-/** Equal scroll room per chapter */
-const CHAPTER_BOUNDS = [0, 0.1, 0.28, 0.46, 0.64, 0.82, 1] as const;
+const CHAPTER_BOUNDS = [0, 0.08, 0.26, 0.44, 0.62, 0.8, 1] as const;
 
 function clamp01(v: number) {
   return Math.max(0, Math.min(1, v));
@@ -95,21 +94,14 @@ export function getHeroStage(progress: number): HeroStage {
   return { num: c.num, label: c.label };
 }
 
-/** CSS clip-path regions for each physical layer (% tuned to hero photo) */
-export const LAYER_CLIPS = {
-  feathers: "inset(0% 0% 44% 0%)",
-  binding: "inset(40% 16% 48% 16%)",
-  cork: "inset(46% 0% 0% 0%)",
-} as const;
-
 export const HIGHLIGHT_ZONES: Record<
   Exclude<ScrollChapter, "intro">,
   { top: number; left: number; width: number; height: number }
 > = {
-  feathers: { top: 6, left: 16, width: 68, height: 40 },
-  geometry: { top: 26, left: 20, width: 60, height: 24 },
-  binding: { top: 46, left: 24, width: 52, height: 12 },
-  cork: { top: 56, left: 28, width: 44, height: 32 },
+  feathers: { top: 4, left: 14, width: 72, height: 42 },
+  geometry: { top: 22, left: 18, width: 64, height: 26 },
+  binding: { top: 44, left: 22, width: 56, height: 14 },
+  cork: { top: 54, left: 26, width: 48, height: 36 },
 };
 
 export type PartCallout = {
@@ -120,30 +112,10 @@ export type PartCallout = {
 };
 
 export const PART_CALLOUTS: PartCallout[] = [
-  {
-    id: "feathers",
-    anchorPct: { x: 50, y: 22 },
-    labelPct: { x: 6, y: 12 },
-    align: "left",
-  },
-  {
-    id: "geometry",
-    anchorPct: { x: 50, y: 38 },
-    labelPct: { x: 94, y: 10 },
-    align: "right",
-  },
-  {
-    id: "binding",
-    anchorPct: { x: 50, y: 50 },
-    labelPct: { x: 6, y: 48 },
-    align: "left",
-  },
-  {
-    id: "cork",
-    anchorPct: { x: 50, y: 72 },
-    labelPct: { x: 94, y: 68 },
-    align: "right",
-  },
+  { id: "feathers", anchorPct: { x: 50, y: 18 }, labelPct: { x: 4, y: 8 }, align: "left" },
+  { id: "geometry", anchorPct: { x: 50, y: 34 }, labelPct: { x: 96, y: 8 }, align: "right" },
+  { id: "binding", anchorPct: { x: 50, y: 48 }, labelPct: { x: 4, y: 44 }, align: "left" },
+  { id: "cork", anchorPct: { x: 50, y: 74 }, labelPct: { x: 96, y: 70 }, align: "right" },
 ];
 
 export type ScrollViewAnim = {
@@ -151,21 +123,17 @@ export type ScrollViewAnim = {
   focusScale: number;
   tiltY: number;
   tiltX: number;
-  /** px — feather cone lifts up */
   featherLift: number;
-  /** scale — skirt blooms outward */
   featherSpread: number;
-  /** px — binding band lifts */
   bindingLift: number;
-  /** 0–1 glow on cork */
   corkGlow: number;
-  /** 0–1 overall exploded state */
   openAmount: number;
   highlight: ScrollChapter | null;
   chapter: number;
   local: number;
 };
 
+/** Lift values in px — tuned for ~400px-wide stage */
 export function getScrollAnim(progress: number): ScrollViewAnim {
   const p = clamp01(progress);
   const chapter = getChapterIndex(p);
@@ -176,8 +144,8 @@ export function getScrollAnim(progress: number): ScrollViewAnim {
 
   let focusY = 0;
   let focusScale = 1;
-  let tiltY = lerp(-3, 4, p);
-  const tiltX = -1.5 + Math.sin(p * Math.PI) * 1.2;
+  let tiltY = lerp(-2, 3, p);
+  const tiltX = -1 + Math.sin(p * Math.PI) * 1.5;
 
   let featherLift = 0;
   let featherSpread = 0;
@@ -187,45 +155,43 @@ export function getScrollAnim(progress: number): ScrollViewAnim {
 
   switch (chapter) {
     case 0:
-      focusY = lerp(0, -4, eased);
-      focusScale = lerp(1, 1.02, eased);
-      openAmount = lerp(0, 0.15, eased);
+      openAmount = eased * 0.05;
       break;
     case 1:
-      focusY = lerp(-4, -28, eased);
-      focusScale = lerp(1.02, 1.1, eased);
-      featherLift = lerp(0, 72, eased);
+      focusY = lerp(0, -20, eased);
+      focusScale = lerp(1, 1.06, eased);
+      featherLift = lerp(0, 70, eased);
       featherSpread = lerp(0, 0.14, eased);
-      openAmount = lerp(0.15, 0.55, eased);
-      tiltY = lerp(-3, 5, eased);
+      openAmount = lerp(0.05, 0.5, eased);
+      tiltY = lerp(-2, 4, eased);
       break;
     case 2:
-      focusY = lerp(-28, -32, eased);
-      focusScale = lerp(1.1, 1.14, eased);
-      featherLift = lerp(72, 96, eased);
-      featherSpread = lerp(0.14, 0.18, eased);
-      bindingLift = lerp(0, 18, eased);
-      openAmount = lerp(0.55, 0.75, eased);
-      tiltY = 5;
+      focusY = lerp(-20, -24, eased);
+      focusScale = lerp(1.06, 1.1, eased);
+      featherLift = lerp(55, 80, eased);
+      featherSpread = lerp(0.12, 0.2, eased);
+      bindingLift = lerp(0, 25, eased);
+      openAmount = lerp(0.45, 0.65, eased);
+      tiltY = 4;
       break;
     case 3:
-      focusY = lerp(-32, 4, eased);
-      focusScale = lerp(1.14, 1.08, eased);
-      featherLift = lerp(96, 88, eased);
-      featherSpread = lerp(0.18, 0.16, eased);
-      bindingLift = lerp(18, 64, eased);
-      openAmount = lerp(0.75, 0.9, eased);
-      tiltY = lerp(5, -2, eased);
+      focusY = lerp(-24, 8, eased);
+      focusScale = lerp(1.1, 1.05, eased);
+      featherLift = lerp(80, 70, eased);
+      featherSpread = lerp(0.2, 0.16, eased);
+      bindingLift = lerp(25, 70, eased);
+      openAmount = lerp(0.65, 0.85, eased);
+      tiltY = lerp(4, -2, eased);
       break;
     case 4:
-      focusY = lerp(4, 24, eased);
-      focusScale = lerp(1.08, 1.12, eased);
-      featherLift = lerp(88, 48, eased);
-      featherSpread = lerp(0.16, 0.08, eased);
-      bindingLift = lerp(64, 28, eased);
-      corkGlow = lerp(0.2, 1, eased);
-      openAmount = lerp(0.9, 0.45, eased);
-      tiltY = lerp(-2, -5, eased);
+      focusY = lerp(8, 20, eased);
+      focusScale = lerp(1.05, 1.08, eased);
+      featherLift = lerp(70, 35, eased);
+      featherSpread = lerp(0.16, 0.06, eased);
+      bindingLift = lerp(70, 30, eased);
+      corkGlow = lerp(0.3, 1, eased);
+      openAmount = lerp(0.85, 0.5, eased);
+      tiltY = lerp(-2, -4, eased);
       break;
   }
 

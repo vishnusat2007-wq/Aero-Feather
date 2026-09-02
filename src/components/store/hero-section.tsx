@@ -21,7 +21,7 @@ export function HeroSection() {
   const handleChapterChange = useCallback((idx: number) => setChapterIdx(idx), []);
 
   return (
-    <section className="af-radial-hero af-grid-bg relative overflow-hidden">
+    <section className="af-radial-hero af-grid-bg relative">
       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-af-bg pointer-events-none" />
 
       <div className="relative mx-auto grid max-w-7xl lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
@@ -99,13 +99,11 @@ export function HeroSection() {
           </FadeIn>
         </div>
 
-        {/* Right — scroll-driven 3D shuttlecock story */}
-        <div className="relative z-10 min-h-[520vh] sm:min-h-[580vh]">
-          <ShuttlecockScrollShowcase
-            onStageChange={handleStageChange}
-            onChapterChange={handleChapterChange}
-          />
-        </div>
+        {/* Right — scroll-driven shuttlecock story (single scroll track) */}
+        <ShuttlecockScrollShowcase
+          onStageChange={handleStageChange}
+          onChapterChange={handleChapterChange}
+        />
       </div>
     </section>
   );
