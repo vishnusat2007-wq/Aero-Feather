@@ -1,13 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
-import Image from "next/image";
 import { cn } from "@/lib/utils";
 import {
   CALLOUTS,
   CYCLE,
   easeInOutCubic,
-  getBloom,
   getEnterOffset,
   getHeroStage,
   getHighlight,
@@ -60,7 +58,6 @@ export function ShuttlecockShowcase({ onStageChange }: ShuttlecockShowcaseProps)
   }, [reducedMotion, onStageChange]);
 
   const { phase, local } = getPhase(reducedMotion ? 6 : time);
-  const bloom = reducedMotion ? 0.06 : getBloom(phase, local);
   const autoHighlight = getHighlight(phase, local);
   const highlight = hovered ?? autoHighlight;
   const enterOffset = reducedMotion ? [0, 0, 0] as [number, number, number] : getEnterOffset(phase, local);
@@ -116,19 +113,17 @@ export function ShuttlecockShowcase({ onStageChange }: ShuttlecockShowcaseProps)
       </svg>
 
       <div
-        className="relative h-[92%] w-full transition-[filter] duration-500"
+        className="pointer-events-none absolute inset-[3%] z-20"
         style={{
-          transform: `translate3d(${enterOffset[0] * 90 + tilt.y * 12}px, ${enterOffset[1] * -80 + floatY * 90 + tilt.x * 8}px, 0) rotate(${reducedMotion ? -3 : -3 + Math.sin(time * 0.42) * 1.7}deg) scaleX(${1 + bloom * 0.28})`,
-          filter: highlight ? "drop-shadow(0 20px 26px rgba(32,182,232,.22))" : "drop-shadow(0 22px 24px rgba(7,17,31,.18))",
+          transform: `translate(${enterOffset[0] * 70 + tilt.y * 8}px, ${enterOffset[1] * -65 + floatY * 60 + tilt.x * 5}px) rotate(${reducedMotion ? -2 : -2 + Math.sin(time * 0.42) * 1.2}deg)`,
+          transition: reducedMotion ? undefined : "transform 80ms linear",
         }}
       >
-        <Image
+        {/* A plain image avoids GPU clipping seen with a transformed, filtered Next image. */}
+        <img
           src="/shuttlecock-hero-real.png"
           alt="Aero Feather tournament goose-feather shuttlecock"
-          fill
-          priority
-          sizes="(min-width: 1024px) 48vw, 88vw"
-          className="object-contain"
+          className="h-full w-full object-contain"
         />
       </div>
 
