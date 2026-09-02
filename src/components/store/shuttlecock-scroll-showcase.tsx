@@ -10,10 +10,14 @@ import {
   getHeroStage,
   getScrollAnim,
   HIGHLIGHT_ZONES,
+  LAYER_CLIPS,
+  PART_CALLOUTS,
   type HeroStage,
 } from "@/components/store/shuttlecock-scroll-story";
 
 export type { HeroStage };
+
+const SHUTTLE_SRC = "/shuttlecock-hero-transparent.png";
 
 function subscribeReducedMotion(cb: () => void) {
   const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -29,6 +33,51 @@ type Props = {
   onStageChange?: (stage: HeroStage) => void;
   onChapterChange?: (index: number) => void;
 };
+
+function PartLayer({
+  clipPath,
+  transform,
+  transformOrigin = "50% 50%",
+  zIndex,
+  glow,
+  children,
+}: {
+  clipPath: string;
+  transform: string;
+  transformOrigin?: string;
+  zIndex: number;
+  glow?: boolean;
+  children?: React.ReactNode;
+}) {
+  return (
+    <div
+      className="absolute inset-0 will-change-transform"
+      style={{
+        clipPath,
+        WebkitClipPath: clipPath,
+        transform,
+        transformOrigin,
+        transformStyle: "preserve-3d",
+        zIndex,
+      }}
+    >
+      <Image
+        src={SHUTTLE_SRC}
+        alt=""
+        width={975}
+        height={1364}
+        priority
+        className="h-full w-full object-contain"
+        style={{
+          filter: glow
+            ? "brightness(1.08) contrast(1.1) drop-shadow(0 0 18px rgba(32,182,232,0.35))"
+            : "brightness(1.04) contrast(1.06)",
+        }}
+      />
+      {children}
+    </div>
+  );
+}
 
 export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Props) {
   const trackRef = useRef<HTMLDivElement>(null);
@@ -59,44 +108,57 @@ export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Pr
     };
   }, [updateProgress]);
 
-  const effectiveProgress = reducedMotion ? 0.32 : progress;
+  const effectiveProgress = reducedMotion ? 0.38 : progress;
   const anim = getScrollAnim(effectiveProgress);
   const chapterIdx = getChapterIndex(effectiveProgress);
   const chapterLocal = getChapterProgress(effectiveProgress);
   const chapter = CHAPTERS[chapterIdx];
+  const highlight = anim.highlight;
+
+  const activeCallout =
+    highlight && highlight !== "intro"
+      ? PART_CALLOUTS.find((c) => c.id === (highlight === "geometry" ? "geometry" : highlight))
+      : null;
+
+  const calloutChapter =
+    highlight === "geometry"
+      ? CHAPTERS[2]
+      : highlight
+        ? CHAPTERS.find((c) => c.id === highlight)
+        : null;
 
   useEffect(() => {
     onStageChange?.(getHeroStage(effectiveProgress));
     onChapterChange?.(chapterIdx);
   }, [effectiveProgress, onStageChange, onChapterChange, chapterIdx]);
 
-  const skirtScale = 1 + anim.featherBloom;
-  const highlight = anim.highlight;
+  const featherScale = 1 + anim.featherSpread;
+  const showExplodedGuides = anim.openAmount > 0.2;
 
   return (
-    <div ref={trackRef} className="relative h-[420vh] sm:h-[480vh]">
+    <div ref={trackRef} className="relative h-[520vh] sm:h-[580vh]">
       <div className="sticky top-0 flex h-[100svh] items-center justify-center overflow-hidden">
         <div
-          className="relative mx-auto flex h-full w-full max-w-[560px] items-center justify-center px-2"
-          style={{ perspective: "1400px" }}
+          className="relative mx-auto flex h-full w-full max-w-[620px] items-center justify-center px-2"
+          style={{ perspective: "1200px" }}
         >
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_42%,rgba(255,255,255,0.12)_0%,rgba(32,182,232,0.08)_38%,transparent_72%)]" />
 
           <div
             className={cn(
-              "absolute bottom-6 left-1/2 z-20 flex -translate-x-1/2 flex-col items-center gap-1 transition-opacity duration-500",
-              progress > 0.08 ? "opacity-0" : "opacity-70",
+              "absolute bottom-6 left-1/2 z-40 flex -translate-x-1/2 flex-col items-center gap-1 transition-opacity duration-500",
+              progress > 0.06 ? "opacity-0" : "opacity-80",
             )}
           >
             <span className="text-[9px] font-semibold tracking-[0.2em] text-af-muted uppercase">
-              Scroll to explore
+              Scroll to open each part
             </span>
             <span className="h-6 w-px animate-af-float bg-af-cyan/50" />
           </div>
 
-          {/* Camera rig — dolly + subtle tilt (car-site style) */}
+          {/* Camera rig */}
           <div
-            className="relative z-10 h-[min(72vh,620px)] w-full will-change-transform"
+            className="relative z-10 h-[min(74vh,640px)] w-full"
             style={{
               transform: `
                 translateY(${anim.focusY}px)
@@ -108,116 +170,211 @@ export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Pr
             }}
           >
             <div
-              className="relative mx-auto h-full w-[88%] max-w-[380px]"
+              className="relative mx-auto h-full w-[90%] max-w-[400px]"
               style={{ transformStyle: "preserve-3d" }}
             >
-              {/* Single photorealistic shuttle — feather skirt blooms from cork anchor */}
+              {/* Exploded-view connector lines between layers */}
+              {showExplodedGuides && (
+                <svg
+                  className="pointer-events-none absolute inset-0 z-0 h-full w-full"
+                  aria-hidden
+                >
+                  <line
+                    x1="50%"
+                    y1={`${48 - anim.featherLift * 0.04}%`}
+                    x2="50%"
+                    y2={`${52 - anim.bindingLift * 0.03}%`}
+                    stroke="#20B6E8"
+                    strokeWidth="1"
+                    strokeDasharray="3 4"
+                    opacity={0.35 + anim.openAmount * 0.35}
+                  />
+                  <line
+                    x1="50%"
+                    y1={`${54 - anim.bindingLift * 0.03}%`}
+                    x2="50%"
+                    y2="58%"
+                    stroke="#20B6E8"
+                    strokeWidth="1"
+                    strokeDasharray="3 4"
+                    opacity={0.35 + anim.openAmount * 0.35}
+                  />
+                </svg>
+              )}
+
+              {/* Cork base — anchored, never detaches */}
+              <PartLayer
+                clipPath={LAYER_CLIPS.cork}
+                zIndex={10}
+                glow={highlight === "cork"}
+                transform={`translateZ(0px) translateY(${anim.corkGlow * 2}px)`}
+              >
+                {highlight === "cork" && (
+                  <div
+                    className="pointer-events-none absolute inset-0 bg-af-cyan/8"
+                    style={{ opacity: anim.corkGlow * 0.6 }}
+                  />
+                )}
+              </PartLayer>
+
+              {/* Binding band — lifts on scroll */}
+              <PartLayer
+                clipPath={LAYER_CLIPS.binding}
+                zIndex={20}
+                glow={highlight === "binding"}
+                transform={`
+                  translateY(-${anim.bindingLift}px)
+                  translateZ(${anim.bindingLift * 0.4}px)
+                `}
+              />
+
+              {/* Feather cone — lifts + blooms outward */}
+              <PartLayer
+                clipPath={LAYER_CLIPS.feathers}
+                zIndex={30}
+                glow={highlight === "feathers" || highlight === "geometry"}
+                transformOrigin="50% 100%"
+                transform={`
+                  translateY(-${anim.featherLift}px)
+                  translateZ(${anim.featherLift * 0.5}px)
+                  scale(${featherScale})
+                `}
+              />
+
+              {/* Full ghost outline when closed — fades as parts open */}
               <div
-                className="relative h-full w-full"
-                style={{
-                  transform: `
-                    translateZ(${anim.featherPeel * 0.3}px)
-                    scale(${skirtScale})
-                  `,
-                  transformOrigin: "50% 72%",
-                  transformStyle: "preserve-3d",
-                }}
+                className="pointer-events-none absolute inset-0 z-[5] transition-opacity duration-300"
+                style={{ opacity: Math.max(0, 1 - anim.openAmount * 1.4) }}
               >
                 <Image
-                  src="/shuttlecock-hero-transparent.png"
+                  src={SHUTTLE_SRC}
                   alt="Premium goose-feather badminton shuttlecock"
                   width={975}
                   height={1364}
                   priority
-                  className="h-full w-full object-contain drop-shadow-[0_24px_48px_rgba(0,0,0,0.45)] dark:drop-shadow-[0_28px_56px_rgba(0,0,0,0.65)]"
-                  style={{
-                    filter: `brightness(1.04) contrast(1.06) drop-shadow(0 0 ${12 + anim.corkGlow * 28}px rgba(32,182,232,${0.08 + anim.corkGlow * 0.2}))`,
-                  }}
+                  className="h-full w-full object-contain opacity-40"
                 />
               </div>
 
-              {/* Binding band lift indicator */}
-              {anim.bindingPeel > 4 && highlight === "binding" && (
-                <div
-                  className="pointer-events-none absolute inset-x-[22%] top-[48%] h-[3%] rounded-full border border-af-cyan/50 bg-af-cyan/5"
-                  style={{
-                    transform: `translateZ(${anim.bindingPeel}px) translateY(-${anim.bindingPeel * 0.15}px)`,
-                    opacity: 0.4 + chapterLocal * 0.4,
-                  }}
-                />
-              )}
-
               {/* Active part highlight ring */}
-              {highlight && (
+              {highlight && highlight !== "intro" && (
                 <div
-                  className="pointer-events-none absolute animate-af-glow rounded-full border-2 border-af-cyan/70 shadow-[0_0_24px_rgba(32,182,232,0.45)]"
+                  className="pointer-events-none absolute z-40 animate-af-glow rounded-full border-2 border-af-cyan shadow-[0_0_28px_rgba(32,182,232,0.5)]"
                   style={{
                     top: `${HIGHLIGHT_ZONES[highlight].top}%`,
                     left: `${HIGHLIGHT_ZONES[highlight].left}%`,
                     width: `${HIGHLIGHT_ZONES[highlight].width}%`,
                     height: `${HIGHLIGHT_ZONES[highlight].height}%`,
-                    opacity: 0.5 + chapterLocal * 0.5,
-                    transform: `translateZ(${anim.featherPeel + 12}px)`,
+                    opacity: 0.55 + chapterLocal * 0.45,
+                    transform: `translateY(-${
+                      highlight === "feathers" || highlight === "geometry"
+                        ? anim.featherLift
+                        : highlight === "binding"
+                          ? anim.bindingLift
+                          : 0
+                    }px)`,
                   }}
                 />
               )}
 
-              {/* Geometry arcs */}
+              {/* Geometry arcs on feather skirt */}
               {highlight === "geometry" && (
                 <svg
-                  className="pointer-events-none absolute inset-0 h-full w-full"
-                  style={{ transform: `translateZ(${anim.featherPeel + 16}px)` }}
+                  className="pointer-events-none absolute inset-0 z-[35] h-full w-full"
+                  style={{ transform: `translateY(-${anim.featherLift}px) scale(${featherScale})` }}
                   aria-hidden
                 >
-                  {[32, 40, 48].map((y, i) => (
+                  {[30, 38, 46].map((y, i) => (
                     <ellipse
                       key={y}
                       cx="50%"
                       cy={`${y}%`}
-                      rx={`${22 + i * 4}%`}
+                      rx={`${24 + i * 4}%`}
                       ry="3%"
                       fill="none"
                       stroke="#20B6E8"
                       strokeWidth="1.5"
-                      opacity={0.55 - i * 0.12}
-                      strokeDasharray="4 4"
+                      opacity={0.6 - i * 0.12}
+                      strokeDasharray="5 4"
                     />
                   ))}
                 </svg>
               )}
 
-              {/* Cork glow */}
-              {highlight === "cork" && (
-                <div
-                  className="pointer-events-none absolute rounded-full bg-af-cyan/10 blur-md"
-                  style={{
-                    top: `${HIGHLIGHT_ZONES.cork.top}%`,
-                    left: `${HIGHLIGHT_ZONES.cork.left}%`,
-                    width: `${HIGHLIGHT_ZONES.cork.width}%`,
-                    height: `${HIGHLIGHT_ZONES.cork.height}%`,
-                    opacity: anim.corkGlow * 0.7,
-                    transform: "translateZ(20px)",
-                  }}
-                />
-              )}
+              <div className="pointer-events-none absolute inset-0 z-50 drop-shadow-[0_28px_56px_rgba(0,0,0,0.5)]" />
             </div>
           </div>
 
-          {/* Chapter callout — desktop */}
-          <div
-            className={cn(
-              "absolute right-0 top-1/2 z-30 hidden max-w-[170px] -translate-y-1/2 rounded-lg border border-af-cyan/40 bg-af-surface/95 px-3 py-3 shadow-[0_0_32px_rgba(32,182,232,0.15)] backdrop-blur-md transition-all duration-500 lg:block",
-              chapterIdx === 0 && "translate-x-4 opacity-0",
-            )}
-            style={{ opacity: chapterIdx === 0 ? 0 : 0.85 + chapterLocal * 0.15 }}
-          >
-            <p className="text-[9px] font-bold tracking-[0.14em] text-af-cyan">
-              {chapter.num} — {chapter.title}
-            </p>
-            <p className="mt-1.5 text-[8px] leading-snug text-af-muted">{chapter.desc}</p>
-          </div>
+          {/* Part callout with leader line */}
+          {activeCallout && calloutChapter && chapterIdx > 0 && (
+            <div className="pointer-events-none absolute inset-0 z-50">
+              <svg className="absolute inset-0 h-full w-full" aria-hidden>
+                <line
+                  x1={`${activeCallout.anchorPct.x}%`}
+                  y1={`${activeCallout.anchorPct.y - anim.featherLift * 0.05}%`}
+                  x2={`${activeCallout.labelPct.x}%`}
+                  y2={`${activeCallout.labelPct.y}%`}
+                  stroke="#20B6E8"
+                  strokeWidth="1.5"
+                  opacity={0.7 + chapterLocal * 0.3}
+                />
+                <circle
+                  cx={`${activeCallout.anchorPct.x}%`}
+                  cy={`${activeCallout.anchorPct.y - anim.featherLift * 0.05}%`}
+                  r="5"
+                  fill="#20B6E8"
+                  opacity={0.9}
+                />
+              </svg>
 
-          <div className="pointer-events-none absolute bottom-[14%] left-1/2 z-0 h-10 w-48 -translate-x-1/2 rounded-full bg-white/10 blur-2xl dark:bg-black/30" />
+              <div
+                className={cn(
+                  "absolute hidden max-w-[190px] rounded-lg border border-af-cyan/50 bg-af-surface/95 px-3.5 py-3 shadow-[0_0_36px_rgba(32,182,232,0.2)] backdrop-blur-md sm:block",
+                )}
+                style={{
+                  left: `${activeCallout.labelPct.x}%`,
+                  top: `${activeCallout.labelPct.y}%`,
+                  transform: activeCallout.align === "right" ? "translate(-100%, -50%)" : "translate(0, -50%)",
+                  opacity: 0.85 + chapterLocal * 0.15,
+                }}
+              >
+                <p className="text-[10px] font-bold tracking-[0.12em] text-af-cyan">
+                  {calloutChapter.num} — {calloutChapter.title}
+                </p>
+                <p className="mt-1.5 text-[9px] leading-snug text-af-muted">{calloutChapter.desc}</p>
+                <ul className="mt-2 space-y-0.5">
+                  {calloutChapter.bullets.map((b) => (
+                    <li key={b} className="flex items-center gap-1.5 text-[8px] text-af-text/80">
+                      <span className="h-1 w-1 shrink-0 rounded-full bg-af-cyan" />
+                      {b}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          )}
+
+          {/* Mobile part card */}
+          {chapterIdx > 0 && (
+            <div
+              className="absolute bottom-8 left-1/2 z-50 w-[min(94%,340px)] -translate-x-1/2 rounded-lg border border-af-cyan/40 bg-af-surface/95 px-4 py-3 shadow-lg backdrop-blur-md sm:hidden"
+              style={{ opacity: 0.9 + chapterLocal * 0.1 }}
+            >
+              <p className="text-[11px] font-bold tracking-[0.1em] text-af-cyan">
+                {chapter.num} — {chapter.title}
+              </p>
+              <p className="mt-1 text-[10px] leading-snug text-af-muted">{chapter.desc}</p>
+              <ul className="mt-2 flex flex-wrap gap-x-3 gap-y-1">
+                {chapter.bullets.map((b) => (
+                  <li key={b} className="text-[9px] text-af-text/75">
+                    • {b}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          <div className="pointer-events-none absolute bottom-[12%] left-1/2 z-0 h-12 w-52 -translate-x-1/2 rounded-full bg-white/10 blur-2xl dark:bg-black/30" />
         </div>
       </div>
     </div>

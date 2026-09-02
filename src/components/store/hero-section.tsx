@@ -62,6 +62,16 @@ export function HeroSection() {
             <div key={chapter.id} className="mt-4 animate-af-fade-up">
               <p className="text-sm font-bold tracking-wide text-af-text">{chapter.title}</p>
               <p className="mt-2 max-w-sm text-sm leading-relaxed text-af-muted">{chapter.desc}</p>
+              {chapterIdx > 0 && (
+                <ul className="mt-3 space-y-1.5">
+                  {chapter.bullets.map((b) => (
+                    <li key={b} className="flex items-center gap-2 text-xs text-af-muted">
+                      <span className="h-1 w-1 shrink-0 rounded-full bg-af-cyan" />
+                      {b}
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
             <div className="mt-4 flex gap-1">
               {CHAPTERS.map((c, i) => (
@@ -90,7 +100,7 @@ export function HeroSection() {
         </div>
 
         {/* Right — scroll-driven 3D shuttlecock story */}
-        <div className="relative z-10 min-h-[420vh] sm:min-h-[480vh]">
+        <div className="relative z-10 min-h-[520vh] sm:min-h-[580vh]">
           <ShuttlecockScrollShowcase
             onStageChange={handleStageChange}
             onChapterChange={handleChapterChange}
