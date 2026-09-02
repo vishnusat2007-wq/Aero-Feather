@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Minus, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
+import { LogoMark } from "@/components/store/logo";
 import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/input";
 import { formatPrice } from "@/lib/format";
@@ -63,7 +64,9 @@ export default function CartPage() {
                 {item.imageUrl ? (
                   <Image src={item.imageUrl} alt={item.name} fill className="object-cover" />
                 ) : (
-                  <Image src="/logo.png" alt="" fill className="object-contain p-2 opacity-30" />
+                  <div className="flex h-full items-center justify-center">
+                    <LogoMark size={48} className="opacity-30" />
+                  </div>
                 )}
               </div>
               <div className="flex flex-1 flex-col justify-between">

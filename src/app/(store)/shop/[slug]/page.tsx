@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { notFound } from "next/navigation";
 import { AddToCartButton } from "@/components/store/add-to-cart-button";
+import { LogoMark } from "@/components/store/logo";
 import { Badge } from "@/components/ui/badge";
 import { formatPrice } from "@/lib/format";
 import { getProductBySlug } from "@/lib/data";
@@ -34,8 +35,8 @@ export default async function ProductPage({
             <Image src={product.image_url} alt={product.name} fill className="object-cover" />
           ) : (
             <div className="flex h-full flex-col items-center justify-center gap-6 bg-gradient-to-b from-af-surface-elevated to-af-bg">
-              <Image src="/logo.png" alt="" width={200} height={200} className="opacity-25" />
-              <div className="h-48 w-20 border border-af-cyan/20 bg-af-bg/50" />
+              <LogoMark size={120} className="opacity-25" />
+              <div className="h-48 w-20 rounded-sm border border-af-cyan/20 bg-af-bg/50" />
             </div>
           )}
         </div>

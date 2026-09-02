@@ -1,15 +1,56 @@
 @import "tailwindcss";
 
+/* ── Semantic tokens (theme-aware) ── */
+:root {
+  --af-bg: #f4f6fa;
+  --af-bg-secondary: #e8ecf4;
+  --af-surface: #ffffff;
+  --af-surface-elevated: #fafbfd;
+  --af-cyan: #20b6e8;
+  --af-blue: #168cd8;
+  --af-text: #0d1a34;
+  --af-muted: #5a6b85;
+  --af-border: rgba(13, 26, 52, 0.08);
+  --af-border-accent: rgba(32, 182, 232, 0.25);
+  --af-shadow: rgba(13, 26, 52, 0.06);
+  --af-shadow-strong: rgba(13, 26, 52, 0.12);
+  --af-glow: rgba(32, 182, 232, 0.15);
+  --logo-navy: #0d1a34;
+  --logo-navy-light: #168cd8;
+  --af-btn-primary-text: #ffffff;
+  --af-hero-gradient-end: #f4f6fa;
+}
+
+.dark {
+  --af-bg: #060b18;
+  --af-bg-secondary: #081326;
+  --af-surface: #0d1a34;
+  --af-surface-elevated: #142449;
+  --af-cyan: #20b6e8;
+  --af-blue: #168cd8;
+  --af-text: #f4f7fb;
+  --af-muted: #8b9cb8;
+  --af-border: rgba(32, 182, 232, 0.12);
+  --af-border-accent: rgba(32, 182, 232, 0.25);
+  --af-shadow: rgba(0, 0, 0, 0.35);
+  --af-shadow-strong: rgba(0, 0, 0, 0.5);
+  --af-glow: rgba(32, 182, 232, 0.2);
+  --logo-navy: #f4f7fb;
+  --logo-navy-light: #94a3b8;
+  --af-btn-primary-text: #060b18;
+  --af-hero-gradient-end: #060b18;
+}
+
 @theme inline {
-  --color-af-bg: #070d1f;
-  --color-af-bg-secondary: #0b1430;
-  --color-af-surface: #101b38;
-  --color-af-surface-elevated: #142449;
-  --color-af-cyan: #20b6e8;
-  --color-af-blue: #168cd8;
-  --color-af-text: #f7f9fc;
-  --color-af-muted: #8b9cb8;
-  --color-af-border: rgba(32, 182, 232, 0.12);
+  --color-af-bg: var(--af-bg);
+  --color-af-bg-secondary: var(--af-bg-secondary);
+  --color-af-surface: var(--af-surface);
+  --color-af-surface-elevated: var(--af-surface-elevated);
+  --color-af-cyan: var(--af-cyan);
+  --color-af-blue: var(--af-blue);
+  --color-af-text: var(--af-text);
+  --color-af-muted: var(--af-muted);
+  --color-af-border: var(--af-border);
   --font-sans: var(--font-jakarta);
 }
 
@@ -19,16 +60,39 @@ html {
 
 body {
   font-family: var(--font-sans), system-ui, sans-serif;
-  background: var(--color-af-bg);
-  color: var(--color-af-text);
+  background: var(--af-bg);
+  color: var(--af-text);
   -webkit-font-smoothing: antialiased;
+}
+
+.theme-transition,
+.theme-transition *,
+.theme-transition *::before,
+.theme-transition *::after {
+  transition:
+    background-color 0.4s ease,
+    border-color 0.4s ease,
+    color 0.3s ease,
+    box-shadow 0.4s ease,
+    fill 0.3s ease,
+    stroke 0.3s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .theme-transition,
+  .theme-transition *,
+  .theme-transition *::before,
+  .theme-transition *::after {
+    transition: none !important;
+  }
 }
 
 ::selection {
   background: rgb(32 182 232 / 0.35);
-  color: #fff;
+  color: inherit;
 }
 
+/* ── Keyframes ── */
 @keyframes af-glow-pulse {
   0%, 100% { opacity: 0.4; transform: scale(1); }
   50% { opacity: 0.7; transform: scale(1.05); }
@@ -48,14 +112,70 @@ body {
   to { opacity: 1; transform: translateY(0); }
 }
 
-@keyframes af-shimmer {
-  0% { background-position: -200% center; }
-  100% { background-position: 200% center; }
+@keyframes shuttle-float {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  33% { transform: translateY(-14px) rotate(0.6deg); }
+  66% { transform: translateY(-6px) rotate(-0.4deg); }
+}
+
+@keyframes shuttle-rotate {
+  0%, 100% { transform: rotate(-2deg); }
+  50% { transform: rotate(2deg); }
+}
+
+@keyframes flight-path-draw {
+  0% { stroke-dashoffset: 400; opacity: 0.3; }
+  50% { opacity: 0.7; }
+  100% { stroke-dashoffset: 0; opacity: 0.55; }
+}
+
+@keyframes flight-dash-slow {
+  to { stroke-dashoffset: -48; }
+}
+
+@keyframes particle-drift {
+  0% { opacity: 0; transform: translate(0, 0) scale(0.5); }
+  20% { opacity: 0.8; }
+  100% { opacity: 0; transform: translate(-40px, -20px) scale(0); }
+}
+
+@keyframes flight-line-sweep {
+  0% { transform: translateX(-100%); opacity: 0; }
+  30% { opacity: 1; }
+  100% { transform: translateX(200%); opacity: 0; }
+}
+
+@keyframes hero-drift {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(8px, -6px); }
 }
 
 .animate-af-glow { animation: af-glow-pulse 4s ease-in-out infinite; }
 .animate-af-float { animation: af-float 6s ease-in-out infinite; }
 .animate-af-fade-up { animation: af-fade-up 0.7s ease-out forwards; }
+.animate-shuttle-float { animation: shuttle-float 9s ease-in-out infinite; }
+.animate-shuttle-rotate { animation: shuttle-rotate 14s ease-in-out infinite; }
+.animate-flight-path {
+  stroke-dasharray: 400;
+  stroke-dashoffset: 400;
+  animation: flight-path-draw 3s ease-out forwards;
+}
+.animate-flight-dash-slow { animation: flight-dash-slow 8s linear infinite; }
+.animate-particle { animation: particle-drift 3s ease-out infinite; }
+.animate-hero-drift { animation: hero-drift 12s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-af-glow,
+  .animate-af-float,
+  .animate-shuttle-float,
+  .animate-shuttle-rotate,
+  .animate-flight-path,
+  .animate-flight-dash-slow,
+  .animate-particle,
+  .animate-hero-drift {
+    animation: none !important;
+  }
+}
 
 .af-gradient-text {
   background: linear-gradient(135deg, #20b6e8 0%, #168cd8 100%);
@@ -66,55 +186,86 @@ body {
 
 .af-grid-bg {
   background-image:
+    linear-gradient(rgb(32 182 232 / 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(32 182 232 / 0.04) 1px, transparent 1px);
+  background-size: 64px 64px;
+}
+
+.dark .af-grid-bg {
+  background-image:
     linear-gradient(rgb(32 182 232 / 0.03) 1px, transparent 1px),
     linear-gradient(90deg, rgb(32 182 232 / 0.03) 1px, transparent 1px);
-  background-size: 64px 64px;
 }
 
 .af-radial-hero {
   background:
-    radial-gradient(ellipse 80% 60% at 70% 40%, rgb(32 182 232 / 0.08), transparent 60%),
+    radial-gradient(ellipse 80% 60% at 70% 40%, rgb(32 182 232 / 0.1), transparent 60%),
     radial-gradient(ellipse 50% 40% at 20% 80%, rgb(22 140 216 / 0.06), transparent 50%),
-    #070d1f;
+    radial-gradient(ellipse 40% 30% at 50% 100%, rgb(13 26 52 / 0.4), transparent 70%),
+    var(--af-bg);
+}
+
+.light .af-radial-hero {
+  background:
+    radial-gradient(ellipse 80% 60% at 70% 40%, rgb(32 182 232 / 0.08), transparent 60%),
+    radial-gradient(ellipse 50% 40% at 20% 80%, rgb(22 140 216 / 0.05), transparent 50%),
+    radial-gradient(ellipse 40% 30% at 50% 100%, rgb(32 182 232 / 0.04), transparent 70%),
+    var(--af-bg);
 }
 
 .af-card-hover {
-  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+  transition:
+    transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
     box-shadow 0.35s cubic-bezier(0.22, 1, 0.36, 1),
     border-color 0.35s ease;
+  transform-style: preserve-3d;
 }
 
 .af-card-hover:hover {
-  transform: translateY(-4px);
-  border-color: rgb(32 182 232 / 0.35);
+  transform: translateY(-6px) rotateX(2deg) rotateY(-2deg);
+  border-color: var(--af-border-accent);
   box-shadow:
-    0 0 0 1px rgb(32 182 232 / 0.1),
-    0 24px 48px -12px rgb(0 0 0 / 0.5),
-    0 0 40px -8px rgb(32 182 232 / 0.15);
+    0 0 0 1px rgb(32 182 232 / 0.08),
+    0 24px 48px -12px var(--af-shadow-strong),
+    0 0 40px -8px var(--af-glow);
+}
+
+.light .af-card-hover:hover {
+  box-shadow:
+    0 0 0 1px rgb(32 182 232 / 0.12),
+    0 20px 40px -12px var(--af-shadow),
+    0 8px 24px -8px rgb(32 182 232 / 0.08);
 }
 
 .af-btn-primary {
+  position: relative;
+  overflow: hidden;
   background: linear-gradient(135deg, #20b6e8, #168cd8);
-  color: #070d1f;
+  color: var(--af-btn-primary-text);
   font-weight: 600;
-  transition: all 0.25s ease;
+  transition: all 0.25s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .af-btn-primary:hover {
   box-shadow: 0 0 24px rgb(32 182 232 / 0.45);
-  transform: translateY(-1px);
+  transform: translateY(-2px) translateX(1px);
+}
+
+.af-btn-primary:active {
+  transform: translateY(0) translateX(0);
 }
 
 .af-btn-ghost {
-  border: 1px solid rgb(32 182 232 / 0.3);
-  color: #f7f9fc;
-  background: rgb(16 27 56 / 0.5);
-  transition: all 0.25s ease;
+  border: 1px solid var(--af-border-accent);
+  color: var(--af-text);
+  background: color-mix(in srgb, var(--af-surface) 60%, transparent);
+  transition: all 0.25s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .af-btn-ghost:hover {
   border-color: rgb(32 182 232 / 0.6);
-  background: rgb(20 36 73 / 0.8);
+  background: var(--af-surface-elevated);
+  transform: translateY(-1px) translateX(-1px);
 }
 
 .section-divider {
@@ -125,4 +276,33 @@ body {
     rgb(32 182 232 / 0.25) 50%,
     transparent
   );
+}
+
+.af-flight-line-btn {
+  position: relative;
+  overflow: hidden;
+}
+
+.af-flight-line-btn::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgb(255 255 255 / 0.35) 50%,
+    transparent 100%
+  );
+  transform: translateX(-100%);
+  pointer-events: none;
+}
+
+.af-flight-line-btn:hover::after {
+  animation: flight-line-sweep 0.7s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .af-flight-line-btn:hover::after {
+    animation: none;
+  }
 }

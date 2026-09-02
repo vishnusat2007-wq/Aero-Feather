@@ -1,6 +1,6 @@
-import Image from "next/image";
 import Link from "next/link";
 import { Mail } from "lucide-react";
+import { BrandLockup } from "@/components/store/logo";
 
 const shopLinks = [
   { href: "/shop", label: "All Shuttlecocks" },
@@ -27,14 +27,8 @@ export function StoreFooter() {
       <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:py-20">
         <div className="grid gap-12 lg:grid-cols-12">
           <div className="lg:col-span-4">
-            <div className="mb-6 flex items-center gap-3">
-              <Image src="/logo.png" alt="Aero Feather" width={44} height={44} />
-              <div>
-                <p className="text-sm font-bold tracking-[0.16em] text-af-text">AERO FEATHER</p>
-                <p className="text-[11px] tracking-widest text-af-muted uppercase">
-                  Premium Shuttlecocks, Ireland
-                </p>
-              </div>
+            <div className="mb-6">
+              <BrandLockup markSize={44} />
             </div>
             <p className="max-w-sm text-sm leading-relaxed text-af-muted">
               Tournament-grade goose feather shuttlecocks engineered for consistent

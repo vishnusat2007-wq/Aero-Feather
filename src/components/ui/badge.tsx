@@ -14,7 +14,7 @@ export function Badge({
         variant === "default" && "bg-af-cyan/15 text-af-cyan",
         variant === "cyan" && "border border-af-cyan/30 bg-af-cyan/10 text-af-cyan",
         variant === "outline" && "border border-af-cyan/20 text-af-muted",
-        variant === "muted" && "bg-af-surface text-af-muted",
+        variant === "muted" && "bg-af-bg-secondary text-af-muted dark:bg-af-surface",
         className,
       )}
       {...props}

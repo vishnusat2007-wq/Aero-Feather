@@ -11,7 +11,9 @@ import {
   Zap,
 } from "lucide-react";
 import { FadeIn } from "@/components/store/fade-in";
-import { HeroVisual } from "@/components/store/hero-visual";
+import { FlightCtaButton } from "@/components/store/flight-cta-button";
+import { HeroBackground } from "@/components/store/hero-background";
+import { ShuttlecockShowcase } from "@/components/store/shuttlecock-showcase";
 import { ProductCard } from "@/components/store/product-card";
 import { Button } from "@/components/ui/button";
 import { getFeaturedProducts } from "@/lib/data";
@@ -80,13 +82,15 @@ export default async function HomePage() {
   return (
     <>
       {/* Hero */}
-      <section className="af-radial-hero af-grid-bg relative flex min-h-[85vh] items-center overflow-hidden">
+      <section className="af-radial-hero af-grid-bg relative flex min-h-[90vh] items-center overflow-hidden">
+        <HeroBackground />
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-af-bg" />
 
-        <div className="relative mx-auto grid w-full max-w-7xl items-center gap-12 px-4 py-20 sm:px-6 lg:grid-cols-2 lg:gap-16 lg:py-28">
-          <div className="max-w-xl">
+        <div className="relative mx-auto grid w-full max-w-7xl items-center gap-10 px-4 py-20 sm:px-6 lg:grid-cols-[1fr_1.1fr] lg:gap-12 lg:py-28">
+          <div className="relative z-10 max-w-xl">
             <FadeIn>
               <p className="mb-6 inline-flex items-center gap-2 border border-af-cyan/25 bg-af-surface/50 px-4 py-1.5 text-[11px] font-semibold tracking-[0.22em] text-af-cyan uppercase backdrop-blur-sm">
+                <span className="h-1.5 w-1.5 rounded-full bg-af-cyan animate-af-glow" />
                 Engineered for Irish Badminton
               </p>
             </FadeIn>
@@ -108,14 +112,23 @@ export default async function HomePage() {
               </p>
             </FadeIn>
 
+            {/* Left-side spec strip — balances composition */}
+            <FadeIn delay={200}>
+              <div className="mt-8 flex flex-wrap gap-x-6 gap-y-2 border-l-2 border-af-cyan/30 pl-4">
+                {["Speed 76–78", "Goose Feather", "Cork Base"].map((spec) => (
+                  <span
+                    key={spec}
+                    className="text-[11px] font-semibold tracking-[0.16em] text-af-muted uppercase"
+                  >
+                    {spec}
+                  </span>
+                ))}
+              </div>
+            </FadeIn>
+
             <FadeIn delay={240}>
               <div className="mt-10 flex flex-wrap gap-4">
-                <Button variant="primary" size="lg" asChild>
-                  <Link href="/shop">
-                    Shop Shuttlecocks
-                    <ArrowRight className="h-4 w-4" />
-                  </Link>
-                </Button>
+                <FlightCtaButton href="/shop">Shop Shuttlecocks</FlightCtaButton>
                 <Button variant="ghost" size="lg" asChild>
                   <Link href="/#about">Discover Aero Feather</Link>
                 </Button>
@@ -123,8 +136,8 @@ export default async function HomePage() {
             </FadeIn>
           </div>
 
-          <FadeIn delay={120} className="relative">
-            <HeroVisual />
+          <FadeIn delay={120} className="relative z-10">
+            <ShuttlecockShowcase />
           </FadeIn>
         </div>
       </section>

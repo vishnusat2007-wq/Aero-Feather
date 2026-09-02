@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Plus } from "lucide-react";
+import { LogoMark } from "@/components/store/logo";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatPrice } from "@/lib/format";
@@ -17,7 +18,7 @@ export function ProductCard({ product, featured = false }: { product: Product; f
   const addItem = useCartStore((s) => s.addItem);
 
   return (
-    <article className="af-card-hover group flex flex-col overflow-hidden border border-af-cyan/10 bg-af-surface">
+    <article className="af-card-hover group flex flex-col overflow-hidden rounded-xl border border-af-cyan/10 bg-af-surface">
       <Link
         href={`/shop/${product.slug}`}
         className="relative block aspect-[4/5] overflow-hidden bg-af-bg-secondary"
@@ -31,10 +32,8 @@ export function ProductCard({ product, featured = false }: { product: Product; f
           />
         ) : (
           <div className="flex h-full flex-col items-center justify-center gap-4 bg-gradient-to-b from-af-surface-elevated to-af-bg">
-            <div className="relative h-32 w-32 opacity-20 transition-opacity group-hover:opacity-30">
-              <Image src="/logo.png" alt="" fill className="object-contain" />
-            </div>
-            <div className="h-40 w-16 border border-af-cyan/20 bg-af-surface/50" />
+            <LogoMark size={80} className="opacity-25 transition-opacity group-hover:opacity-35" />
+            <div className="h-40 w-16 rounded-sm border border-af-cyan/20 bg-af-surface/50" />
           </div>
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-af-bg/80 via-transparent to-transparent opacity-60" />

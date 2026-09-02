@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
+import Script from "next/script";
+import { getInitialThemeScript } from "@/lib/theme";
 import "./globals.css";
 
 const jakarta = Plus_Jakarta_Sans({
@@ -12,7 +14,7 @@ export const metadata: Metadata = {
   title: "Aero Feather — Premium Shuttlecocks Ireland",
   description:
     "Tournament-grade goose feather shuttlecocks engineered for Irish badminton. Premium flight, durability and performance.",
-  icons: { icon: "/logo.png" },
+  icons: { icon: "/logo-mark.png" },
 };
 
 export default function RootLayout({
@@ -21,7 +23,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <Script id="af-theme-init" strategy="beforeInteractive">
+          {getInitialThemeScript()}
+        </Script>
+      </head>
       <body className={`${jakarta.variable} antialiased`}>{children}</body>
     </html>
   );
