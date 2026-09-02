@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Mail } from "lucide-react";
-import { BrandLockup } from "@/components/store/logo";
+import { LogoMark } from "@/components/store/logo";
 
 const shopLinks = [
   { href: "/shop", label: "All Shuttlecocks" },
@@ -28,7 +28,7 @@ export function StoreFooter() {
         <div className="grid gap-12 lg:grid-cols-12">
           <div className="lg:col-span-4">
             <div className="mb-6">
-              <BrandLockup markSize={44} />
+              <LogoMark size={56} glow />
             </div>
             <p className="max-w-sm text-sm leading-relaxed text-af-muted">
               Tournament-grade goose feather shuttlecocks engineered for consistent
