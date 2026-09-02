@@ -10,7 +10,6 @@ import {
   getHeroStage,
   getScrollAnim,
   HIGHLIGHT_ZONES,
-  PART_CALLOUTS,
   type HeroStage,
 } from "@/components/store/shuttlecock-scroll-story";
 
@@ -87,14 +86,6 @@ export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Pr
   const chapter = CHAPTERS[chapterIdx];
   const highlight = anim.highlight;
 
-  const activeCallout =
-    highlight && highlight !== "intro"
-      ? PART_CALLOUTS.find((c) => c.id === highlight)
-      : null;
-
-  const calloutChapter =
-    highlight && highlight !== "intro" ? CHAPTERS.find((c) => c.id === highlight) : null;
-
   useEffect(() => {
     onStageChange?.(getHeroStage(effectiveProgress));
     onChapterChange?.(chapterIdx);
@@ -105,41 +96,28 @@ export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Pr
 
   return (
     <div ref={trackRef} className="relative h-[500vh]">
-      {/* overflow-visible so lifted parts are not clipped */}
-      <div className="sticky top-0 flex h-[100svh] items-center justify-center overflow-visible">
+      <div className="sticky top-0 grid h-[100svh] grid-rows-[1fr_auto] overflow-visible pt-[4.5rem]">
+        {/* Shuttle stage — centred, kept clear of text zones */}
         <div
-          className="relative mx-auto flex h-full w-full max-w-[640px] items-center justify-center px-2"
+          className="relative flex min-h-0 items-center justify-center px-2 pb-2"
           style={{ perspective: "1400px" }}
         >
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_42%,rgba(255,255,255,0.12)_0%,rgba(32,182,232,0.08)_38%,transparent_72%)]" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_38%,rgba(255,255,255,0.12)_0%,rgba(32,182,232,0.08)_38%,transparent_72%)]" />
 
           <div
             className={cn(
-              "absolute bottom-8 left-1/2 z-50 flex -translate-x-1/2 flex-col items-center gap-1 transition-opacity duration-300",
+              "absolute left-1/2 top-[12%] z-40 flex -translate-x-1/2 flex-col items-center gap-1 transition-opacity duration-300 lg:top-[8%]",
               progress > 0.05 ? "opacity-0 pointer-events-none" : "opacity-90",
             )}
           >
             <span className="text-[10px] font-semibold tracking-[0.18em] text-af-cyan uppercase">
               Scroll to open each part
             </span>
-            <span className="h-8 w-px animate-af-float bg-af-cyan/60" />
-          </div>
-
-          {/* Chapter progress bar */}
-          <div className="absolute top-6 left-1/2 z-50 flex -translate-x-1/2 gap-1.5">
-            {CHAPTERS.map((c, i) => (
-              <div
-                key={c.id}
-                className={cn(
-                  "h-1 rounded-full transition-all duration-300",
-                  i === chapterIdx ? "w-8 bg-af-cyan" : "w-3 bg-af-cyan/20",
-                )}
-              />
-            ))}
+            <span className="h-6 w-px animate-af-float bg-af-cyan/60" />
           </div>
 
           <div
-            className="relative z-10 w-full max-w-[400px]"
+            className="relative z-10 w-full max-w-[380px] lg:max-w-[400px]"
             style={{
               transform: `
                 translateY(${anim.focusY}px)
@@ -150,10 +128,15 @@ export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Pr
               transformStyle: "preserve-3d",
             }}
           >
-            {/* Stage — fixed aspect ratio matching shuttle photo */}
             <div
               className="relative mx-auto w-full overflow-visible"
-              style={{ aspectRatio: `${IMG_W} / ${IMG_H}`, maxHeight: "min(72vh, 620px)" }}
+              style={{
+                aspectRatio: `${IMG_W} / ${IMG_H}`,
+                maxHeight:
+                  highlight === "feathers" || highlight === "geometry"
+                    ? "min(58vh, 520px)"
+                    : "min(64vh, 580px)",
+              }}
             >
               {/* Gap labels between layers when open */}
               {gapVisible && anim.featherLift > 8 && (
@@ -348,51 +331,46 @@ export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Pr
               )}
             </div>
           </div>
+        </div>
 
-          {/* Callout card */}
-          {activeCallout && calloutChapter && chapterIdx > 0 && (
-            <div className="pointer-events-none absolute inset-0 z-50 hidden sm:block">
-              <svg className="absolute inset-0 h-full w-full" aria-hidden>
-                <line
-                  x1={`${activeCallout.anchorPct.x}%`}
-                  y1={`${activeCallout.anchorPct.y}%`}
-                  x2={`${activeCallout.labelPct.x}%`}
-                  y2={`${activeCallout.labelPct.y}%`}
-                  stroke="#20B6E8"
-                  strokeWidth="2"
-                  opacity={0.85}
-                />
-                <circle
-                  cx={`${activeCallout.anchorPct.x}%`}
-                  cy={`${activeCallout.anchorPct.y}%`}
-                  r="6"
-                  fill="#20B6E8"
-                />
-              </svg>
-              <div
-                className="absolute max-w-[200px] rounded-lg border border-af-cyan/50 bg-af-surface px-4 py-3 shadow-[0_0_40px_rgba(32,182,232,0.25)]"
-                style={{
-                  left: `${activeCallout.labelPct.x}%`,
-                  top: `${activeCallout.labelPct.y}%`,
-                  transform:
-                    activeCallout.align === "right" ? "translate(-100%, -50%)" : "translate(8px, -50%)",
-                }}
-              >
-                <p className="text-[11px] font-bold text-af-cyan">
-                  {calloutChapter.num} — {calloutChapter.title}
-                </p>
-                <p className="mt-1.5 text-[10px] leading-relaxed text-af-muted">{calloutChapter.desc}</p>
+        {/* Bottom strip — progress + mobile/tablet explanation (never over feather tips) */}
+        <div className="relative z-50 border-t border-af-cyan/10 bg-af-bg/80 px-4 py-4 backdrop-blur-md lg:hidden">
+          {chapterIdx > 0 ? (
+            <div className="mx-auto max-w-md">
+              <div className="mb-3 flex gap-1.5">
+                {CHAPTERS.map((c, i) => (
+                  <div
+                    key={c.id}
+                    className={cn(
+                      "h-1 flex-1 rounded-full transition-all duration-300",
+                      i === chapterIdx ? "bg-af-cyan" : "bg-af-cyan/20",
+                    )}
+                  />
+                ))}
               </div>
-            </div>
-          )}
-
-          {/* Mobile card */}
-          {chapterIdx > 0 && (
-            <div className="absolute bottom-6 left-1/2 z-50 w-[min(92%,360px)] -translate-x-1/2 rounded-lg border border-af-cyan/40 bg-af-surface/95 px-4 py-3 shadow-xl backdrop-blur-md sm:hidden">
-              <p className="text-xs font-bold text-af-cyan">
+              <p className="text-[11px] font-bold tracking-[0.12em] text-af-cyan">
                 {chapter.num} — {chapter.title}
               </p>
-              <p className="mt-1 text-[11px] text-af-muted">{chapter.desc}</p>
+              <p className="mt-1.5 text-sm leading-relaxed text-af-muted">{chapter.desc}</p>
+              <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
+                {chapter.bullets.map((b) => (
+                  <li key={b} className="text-xs text-af-text/80">
+                    • {b}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : (
+            <div className="mx-auto flex max-w-md gap-1.5">
+              {CHAPTERS.map((c, i) => (
+                <div
+                  key={c.id}
+                  className={cn(
+                    "h-1 flex-1 rounded-full",
+                    i === chapterIdx ? "bg-af-cyan" : "bg-af-cyan/20",
+                  )}
+                />
+              ))}
             </div>
           )}
         </div>

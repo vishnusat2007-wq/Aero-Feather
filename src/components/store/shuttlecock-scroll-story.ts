@@ -112,10 +112,10 @@ export type PartCallout = {
 };
 
 export const PART_CALLOUTS: PartCallout[] = [
-  { id: "feathers", anchorPct: { x: 50, y: 18 }, labelPct: { x: 4, y: 8 }, align: "left" },
-  { id: "geometry", anchorPct: { x: 50, y: 34 }, labelPct: { x: 96, y: 8 }, align: "right" },
-  { id: "binding", anchorPct: { x: 50, y: 48 }, labelPct: { x: 4, y: 44 }, align: "left" },
-  { id: "cork", anchorPct: { x: 50, y: 74 }, labelPct: { x: 96, y: 70 }, align: "right" },
+  { id: "feathers", anchorPct: { x: 50, y: 20 }, labelPct: { x: 50, y: 92 }, align: "left" },
+  { id: "geometry", anchorPct: { x: 50, y: 36 }, labelPct: { x: 50, y: 92 }, align: "left" },
+  { id: "binding", anchorPct: { x: 50, y: 50 }, labelPct: { x: 50, y: 92 }, align: "left" },
+  { id: "cork", anchorPct: { x: 50, y: 74 }, labelPct: { x: 50, y: 92 }, align: "left" },
 ];
 
 export type ScrollViewAnim = {
@@ -158,25 +158,25 @@ export function getScrollAnim(progress: number): ScrollViewAnim {
       openAmount = eased * 0.05;
       break;
     case 1:
-      focusY = lerp(0, -20, eased);
-      focusScale = lerp(1, 1.06, eased);
+      focusY = lerp(24, 56, eased);
+      focusScale = lerp(0.98, 1.02, eased);
       featherLift = lerp(0, 70, eased);
       featherSpread = lerp(0, 0.14, eased);
       openAmount = lerp(0.05, 0.5, eased);
-      tiltY = lerp(-2, 4, eased);
+      tiltY = lerp(-2, 3, eased);
       break;
     case 2:
-      focusY = lerp(-20, -24, eased);
-      focusScale = lerp(1.06, 1.1, eased);
+      focusY = lerp(56, 64, eased);
+      focusScale = lerp(1.02, 1.04, eased);
       featherLift = lerp(70, 110, eased);
       featherSpread = lerp(0.14, 0.22, eased);
       bindingLift = lerp(0, 35, eased);
       openAmount = lerp(0.5, 0.7, eased);
-      tiltY = 4;
+      tiltY = 3;
       break;
     case 3:
-      focusY = lerp(-24, 8, eased);
-      focusScale = lerp(1.1, 1.05, eased);
+      focusY = lerp(64, 36, eased);
+      focusScale = lerp(1.04, 1, eased);
       featherLift = lerp(110, 95, eased);
       featherSpread = lerp(0.22, 0.18, eased);
       bindingLift = lerp(35, 90, eased);

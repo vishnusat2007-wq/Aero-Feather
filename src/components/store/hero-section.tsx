@@ -50,44 +50,45 @@ export function HeroSection() {
             </p>
           </FadeIn>
 
-          {/* Scroll-synced chapter copy */}
-          <div className="mt-8 min-h-[120px]">
+          {/* Scroll-synced chapter copy — desktop only; stays left so shuttle stays clear */}
+          <div className="mt-8 hidden min-h-[140px] lg:block">
             <div className="flex items-baseline gap-2 border-l-2 border-af-cyan/40 pl-4 transition-all duration-500">
-              <span className="text-lg font-bold tabular-nums text-af-cyan">{stage.num}</span>
+              <span className="text-xl font-bold tabular-nums text-af-cyan">{stage.num}</span>
               <span className="text-[11px] font-semibold tracking-[0.2em] text-af-muted">/</span>
               <span className="text-[11px] font-bold tracking-[0.2em] text-af-text uppercase">
                 {stage.label}
               </span>
             </div>
-            <div key={chapter.id} className="mt-4 animate-af-fade-up">
-              <p className="text-sm font-bold tracking-wide text-af-text">{chapter.title}</p>
-              <p className="mt-2 max-w-sm text-sm leading-relaxed text-af-muted">{chapter.desc}</p>
+            <div key={chapter.id} className="mt-5 animate-af-fade-up">
+              <p className="text-base font-bold tracking-wide text-af-text">{chapter.title}</p>
+              <p className="mt-3 max-w-sm text-sm leading-relaxed text-af-muted">{chapter.desc}</p>
               {chapterIdx > 0 && (
-                <ul className="mt-3 space-y-1.5">
+                <ul className="mt-4 space-y-2">
                   {chapter.bullets.map((b) => (
-                    <li key={b} className="flex items-center gap-2 text-xs text-af-muted">
-                      <span className="h-1 w-1 shrink-0 rounded-full bg-af-cyan" />
+                    <li key={b} className="flex items-start gap-2.5 text-sm text-af-muted">
+                      <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-af-cyan" />
                       {b}
                     </li>
                   ))}
                 </ul>
               )}
             </div>
-            <div className="mt-4 flex gap-1">
+            <div className="mt-5 flex gap-1.5">
               {CHAPTERS.map((c, i) => (
                 <span
                   key={c.id}
                   className={cn(
-                    "h-1 flex-1 max-w-8 rounded-full transition-all duration-500",
+                    "h-1 flex-1 max-w-10 rounded-full transition-all duration-500",
                     i === chapterIdx ? "bg-af-cyan" : "bg-af-cyan/15",
                   )}
                 />
               ))}
             </div>
-            <p className="mt-3 text-[10px] font-medium tracking-[0.18em] text-af-muted uppercase lg:hidden">
-              Scroll to explore the shuttlecock →
-            </p>
           </div>
+
+          <p className="mt-3 text-[10px] font-medium tracking-[0.18em] text-af-muted uppercase lg:hidden">
+            Scroll to explore the shuttlecock →
+          </p>
 
           <FadeIn delay={240}>
             <div className="mt-8 flex flex-wrap gap-4">

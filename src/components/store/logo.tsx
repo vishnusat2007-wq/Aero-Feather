@@ -8,7 +8,7 @@ type LogoMarkProps = {
   priority?: boolean;
 };
 
-/** Official Aero Feather mark — transparent PNG derived from supplied logo */
+/** Circular Aero Feather emblem — A + swoosh only, no wordmark */
 export function LogoMark({
   className,
   size = 40,
@@ -16,22 +16,28 @@ export function LogoMark({
   priority = false,
 }: LogoMarkProps) {
   return (
-    <Image
-      src="/logo-mark.png"
-      alt=""
-      width={size}
-      height={size}
-      priority={priority}
-      aria-hidden
+    <span
       className={cn(
-        "shrink-0 object-contain",
-        /* Preserve authentic colours; boost visibility on dark backgrounds without altering geometry */
-        "dark:brightness-[1.12] dark:contrast-[1.08]",
-        glow &&
-          "drop-shadow-[0_0_10px_rgba(32,182,232,0.2)] dark:drop-shadow-[0_0_16px_rgba(32,182,232,0.32)]",
+        "relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full",
+        "border border-af-cyan/20 bg-af-surface/80",
+        glow && "shadow-[0_0_20px_rgba(32,182,232,0.18)]",
         className,
       )}
-    />
+      style={{ width: size, height: size }}
+    >
+      <Image
+        src="/logo-mark-circle.png"
+        alt=""
+        width={size}
+        height={size}
+        priority={priority}
+        aria-hidden
+        className={cn(
+          "h-full w-full object-cover",
+          "dark:brightness-[1.1] dark:contrast-[1.06]",
+        )}
+      />
+    </span>
   );
 }
 
@@ -52,7 +58,7 @@ export function BrandLockup({
         size={markSize}
         glow
         priority
-        className="transition-transform duration-300 group-hover:scale-[1.03]"
+        className="transition-transform duration-300 group-hover:scale-[1.04]"
       />
       <div className="hidden sm:block leading-none">
         <p className="text-[13px] font-bold tracking-[0.2em] text-af-text">

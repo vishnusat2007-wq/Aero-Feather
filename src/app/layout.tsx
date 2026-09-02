@@ -14,7 +14,7 @@ export const metadata: Metadata = {
   title: "Aero Feather — Premium Shuttlecocks Ireland",
   description:
     "Tournament-grade goose feather shuttlecocks engineered for Irish badminton. Premium flight, durability and performance.",
-  icons: { icon: "/logo-mark.png" },
+  icons: { icon: "/logo-mark-circle.png" },
 };
 
 export default function RootLayout({
