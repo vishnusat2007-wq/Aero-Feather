@@ -124,8 +124,8 @@ export const CALLOUTS = [
     num: "01",
     title: "SELECTED GOOSE FEATHERS",
     desc: "Carefully selected feathers for consistent aerodynamic response.",
-    anchorPct: { x: 52, y: 32 },
-    labelPct: { x: 8, y: 20 },
+    anchorPct: { x: 50, y: 28 },
+    labelPct: { x: 8, y: 18 },
     align: "left" as const,
   },
   {
@@ -133,8 +133,8 @@ export const CALLOUTS = [
     num: "02",
     title: "PRECISE FEATHER GEOMETRY",
     desc: "Consistent spacing and angle designed for stable rotation.",
-    anchorPct: { x: 54, y: 44 },
-    labelPct: { x: 92, y: 16 },
+    anchorPct: { x: 50, y: 40 },
+    labelPct: { x: 92, y: 14 },
     align: "right" as const,
   },
   {
@@ -142,8 +142,8 @@ export const CALLOUTS = [
     num: "03",
     title: "REINFORCED BINDING",
     desc: "Designed to maintain structure throughout demanding rallies.",
-    anchorPct: { x: 50, y: 56 },
-    labelPct: { x: 8, y: 58 },
+    anchorPct: { x: 50, y: 52 },
+    labelPct: { x: 8, y: 52 },
     align: "left" as const,
   },
   {
@@ -151,8 +151,8 @@ export const CALLOUTS = [
     num: "04",
     title: "PRECISION CORK BASE",
     desc: "Balanced impact response and dependable shuttle behaviour.",
-    anchorPct: { x: 50, y: 72 },
-    labelPct: { x: 92, y: 76 },
+    anchorPct: { x: 50, y: 70 },
+    labelPct: { x: 92, y: 72 },
     align: "right" as const,
   },
 ];
