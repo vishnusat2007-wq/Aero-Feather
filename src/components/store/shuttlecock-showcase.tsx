@@ -1,12 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { cn } from "@/lib/utils";
 import {
   CALLOUTS,
   CYCLE,
   easeInOutCubic,
-  getEnterOffset,
   getHeroStage,
   getHighlight,
   getPhase,
@@ -32,9 +31,7 @@ type ShuttlecockShowcaseProps = {
 };
 
 export function ShuttlecockShowcase({ onStageChange }: ShuttlecockShowcaseProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
   const [time, setTime] = useState(0);
-  const [tilt, setTilt] = useState({ x: 0, y: 0 });
   const [hovered, setHovered] = useState<HighlightTarget>(null);
   const reducedMotion = useSyncExternalStore(
     subscribeReducedMotion,
@@ -60,28 +57,12 @@ export function ShuttlecockShowcase({ onStageChange }: ShuttlecockShowcaseProps)
   const { phase, local } = getPhase(reducedMotion ? 6 : time);
   const autoHighlight = getHighlight(phase, local);
   const highlight = hovered ?? autoHighlight;
-  const enterOffset = reducedMotion ? [0, 0, 0] as [number, number, number] : getEnterOffset(phase, local);
   const trajectory = getTrajectoryProgress(phase, local);
-  const floatY = reducedMotion ? 0 : Math.sin(time * 0.55) * 0.012;
   const showCallouts = phase === "explain" || (reducedMotion && highlight !== null);
-
-  const handleMouseMove = useCallback(
-    (e: React.MouseEvent) => {
-      if (reducedMotion || !containerRef.current) return;
-      const rect = containerRef.current.getBoundingClientRect();
-      const dx = (e.clientX - (rect.left + rect.width / 2)) / rect.width;
-      const dy = (e.clientY - (rect.top + rect.height / 2)) / rect.height;
-      setTilt({ x: dy, y: dx });
-    },
-    [reducedMotion],
-  );
 
   return (
     <div
-      ref={containerRef}
       className="relative mx-auto flex h-[min(480px,62vh)] w-full max-w-[620px] items-center justify-center sm:h-[min(540px,72vh)] lg:h-[640px]"
-      onMouseMove={handleMouseMove}
-      onMouseLeave={() => setTilt({ x: 0, y: 0 })}
     >
       {/* Hero spotlight — shuttlecock brightest object */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_55%_45%,rgba(255,255,255,0.09)_0%,rgba(32,182,232,0.07)_28%,transparent_68%)]" />
@@ -112,23 +93,15 @@ export function ShuttlecockShowcase({ onStageChange }: ShuttlecockShowcaseProps)
         />
       </svg>
 
-      <div
-        className="pointer-events-none absolute inset-[3%] z-20"
-        style={{
-          transform: `translate(${enterOffset[0] * 70 + tilt.y * 8}px, ${enterOffset[1] * -65 + floatY * 60 + tilt.x * 5}px) rotate(${reducedMotion ? -2 : -2 + Math.sin(time * 0.42) * 1.2}deg)`,
-          transition: reducedMotion ? undefined : "transform 80ms linear",
-        }}
-      >
-        {/* A plain image avoids GPU clipping seen with a transformed, filtered Next image. */}
-        <img
-          src="/shuttlecock-hero-real.png"
-          alt="Aero Feather tournament goose-feather shuttlecock"
-          className="h-full w-full object-contain"
-        />
-      </div>
+      {/* Static, cache-busted layer keeps the complete product visible in every browser. */}
+      <img
+        src="/shuttlecock-hero-v2.png"
+        alt="Aero Feather tournament goose-feather shuttlecock"
+        className="pointer-events-none absolute inset-[3%] z-[60] h-[94%] w-[94%] object-contain"
+      />
 
       {showCallouts && (
-        <div className="pointer-events-none absolute inset-0 hidden sm:block">
+        <div className="pointer-events-none absolute inset-0 z-[70] hidden sm:block">
           {CALLOUTS.map((c, i) => {
             const active = highlight === c.id;
             const visible =
@@ -176,7 +149,7 @@ export function ShuttlecockShowcase({ onStageChange }: ShuttlecockShowcaseProps)
       )}
 
       {!reducedMotion && phase === "explain" && (
-        <div className="absolute inset-0 hidden sm:block">
+        <div className="absolute inset-0 z-[70] hidden sm:block">
           {CALLOUTS.map((c) => (
             <button
               key={c.id}

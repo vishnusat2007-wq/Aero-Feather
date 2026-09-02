@@ -20,6 +20,9 @@ export async function getActiveProducts(): Promise<Product[]> {
 }
 
 export async function getFeaturedProducts(limit = 4): Promise<Product[]> {
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+    return [];
+  }
   const supabase = await createClient();
   const { data, error } = await supabase
     .from(PRODUCTS)
