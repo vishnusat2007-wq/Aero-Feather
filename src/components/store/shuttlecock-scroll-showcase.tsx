@@ -212,7 +212,7 @@ export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Pr
                   <div
                     key={c.id}
                     className={cn(
-                      "h-1 flex-1 rounded-full transition-all duration-300",
+                      "h-1.5 flex-1 rounded-full transition-all duration-300",
                       i === chapterIdx ? "bg-af-cyan" : "bg-af-cyan/20",
                     )}
                   />
@@ -229,7 +229,7 @@ export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Pr
                 <div
                   key={c.id}
                   className={cn(
-                    "h-1 flex-1 rounded-full",
+                    "h-1.5 flex-1 rounded-full",
                     i === chapterIdx ? "bg-af-cyan" : "bg-af-cyan/20",
                   )}
                 />

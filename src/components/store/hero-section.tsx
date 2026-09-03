@@ -78,7 +78,7 @@ export function HeroSection() {
                 <span
                   key={c.id}
                   className={cn(
-                    "h-1 flex-1 max-w-10 rounded-full transition-all duration-500",
+                    "h-1.5 w-7 rounded-full transition-all duration-500",
                     i === chapterIdx ? "bg-af-cyan" : "bg-af-cyan/15",
                   )}
                 />
