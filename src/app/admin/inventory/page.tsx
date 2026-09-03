@@ -92,7 +92,7 @@ export default async function InventoryPage() {
         </div>
       )}
 
-      <div className="overflow-hidden rounded-2xl border border-white/10 bg-[#0d1a34]">
+      <div className="overflow-x-auto rounded-2xl border border-white/10 bg-[#0d1a34]">
         <table className="w-full text-sm">
           <thead className="bg-white/5 text-left text-slate-400">
             <tr>
