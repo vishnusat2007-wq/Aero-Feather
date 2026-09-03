@@ -1,8 +1,10 @@
 @import "tailwindcss";
 
-/* ── Semantic tokens (theme-aware) — dark by default ── */
-:root,
-.dark {
+/* Class-based dark: so `dark:` utilities follow the theme toggle, not OS preference */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ── Semantic tokens — dark default on :root; html.light / html.dark win ── */
+:root {
   --af-bg: #060b18;
   --af-bg-secondary: #081326;
   --af-surface: #0d1a34;
@@ -23,7 +25,28 @@
   color-scheme: dark;
 }
 
-.light {
+html.dark {
+  --af-bg: #060b18;
+  --af-bg-secondary: #081326;
+  --af-surface: #0d1a34;
+  --af-surface-elevated: #142449;
+  --af-cyan: #20b6e8;
+  --af-blue: #168cd8;
+  --af-text: #f4f7fb;
+  --af-muted: #8b9cb8;
+  --af-border: rgba(32, 182, 232, 0.12);
+  --af-border-accent: rgba(32, 182, 232, 0.25);
+  --af-shadow: rgba(0, 0, 0, 0.35);
+  --af-shadow-strong: rgba(0, 0, 0, 0.5);
+  --af-glow: rgba(32, 182, 232, 0.2);
+  --logo-navy: #f4f7fb;
+  --logo-navy-light: #94a3b8;
+  --af-btn-primary-text: #060b18;
+  --af-hero-gradient-end: #060b18;
+  color-scheme: dark;
+}
+
+html.light {
   --af-bg: #f4f6fa;
   --af-bg-secondary: #e8ecf4;
   --af-surface: #ffffff;
@@ -57,8 +80,11 @@
   --font-sans: var(--font-jakarta);
 }
 
-html {
-  scroll-behavior: smooth;
+/* Smooth scroll for in-page anchors only — avoid fighting the hero scroll scrub */
+@media (prefers-reduced-motion: no-preference) {
+  html:not(.af-hero-scrolling) {
+    scroll-behavior: smooth;
+  }
 }
 
 body {
@@ -68,24 +94,17 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-.theme-transition,
-.theme-transition *,
-.theme-transition *::before,
-.theme-transition *::after {
+/* Theme color fades only — do not blanket-override transform transitions */
+.theme-transition {
   transition:
-    background-color 0.4s ease,
-    border-color 0.4s ease,
+    background-color 0.35s ease,
+    border-color 0.35s ease,
     color 0.3s ease,
-    box-shadow 0.4s ease,
-    fill 0.3s ease,
-    stroke 0.3s ease;
+    box-shadow 0.35s ease;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .theme-transition,
-  .theme-transition *,
-  .theme-transition *::before,
-  .theme-transition *::after {
+  .theme-transition {
     transition: none !important;
   }
 }
@@ -200,6 +219,12 @@ body {
     linear-gradient(90deg, rgb(32 182 232 / 0.03) 1px, transparent 1px);
 }
 
+html.light .af-grid-bg {
+  background-image:
+    linear-gradient(rgb(32 182 232 / 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(32 182 232 / 0.05) 1px, transparent 1px);
+}
+
 .af-radial-hero {
   background:
     radial-gradient(ellipse 80% 60% at 70% 40%, rgb(32 182 232 / 0.1), transparent 60%),
@@ -208,7 +233,8 @@ body {
     var(--af-bg);
 }
 
-.light .af-radial-hero {
+.light .af-radial-hero,
+html.light .af-radial-hero {
   background:
     radial-gradient(ellipse 80% 60% at 70% 40%, rgb(32 182 232 / 0.08), transparent 60%),
     radial-gradient(ellipse 50% 40% at 20% 80%, rgb(22 140 216 / 0.05), transparent 50%),

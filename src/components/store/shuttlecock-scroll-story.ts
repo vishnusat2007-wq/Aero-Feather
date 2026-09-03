@@ -54,7 +54,8 @@ export const CHAPTERS: ChapterInfo[] = [
   },
 ];
 
-const CHAPTER_BOUNDS = [0, 0.08, 0.26, 0.44, 0.62, 0.8, 1] as const;
+/** Chapter windows across the full 0→1 scroll track (cork runs through the end). */
+const CHAPTER_BOUNDS = [0, 0.08, 0.26, 0.44, 0.62, 1] as const;
 
 function clamp01(v: number) {
   return Math.max(0, Math.min(1, v));
@@ -78,15 +79,15 @@ export function getChapterIndex(progress: number): number {
   if (p < CHAPTER_BOUNDS[2]) return 1;
   if (p < CHAPTER_BOUNDS[3]) return 2;
   if (p < CHAPTER_BOUNDS[4]) return 3;
-  if (p < CHAPTER_BOUNDS[5]) return 4;
   return 4;
 }
 
 export function getChapterProgress(progress: number): number {
   const idx = getChapterIndex(progress);
   const start = CHAPTER_BOUNDS[idx];
-  const end = CHAPTER_BOUNDS[idx + 1];
-  return end === start ? 1 : (progress - start) / (end - start);
+  const end = CHAPTER_BOUNDS[idx + 1] ?? 1;
+  if (end === start) return 1;
+  return clamp01((progress - start) / (end - start));
 }
 
 export function getHeroStage(progress: number): HeroStage {
@@ -138,7 +139,7 @@ export function getScrollAnim(progress: number): ScrollViewAnim {
   const p = clamp01(progress);
   const chapter = getChapterIndex(p);
   const local = getChapterProgress(p);
-  const eased = easeInOutCubic(local);
+  const eased = easeInOutCubic(clamp01(local));
 
   const highlight: ScrollChapter | null = chapter === 0 ? null : CHAPTERS[chapter].id;
 
@@ -186,11 +187,11 @@ export function getScrollAnim(progress: number): ScrollViewAnim {
     case 4:
       focusY = lerp(8, 20, eased);
       focusScale = lerp(1.05, 1.08, eased);
-      featherLift = lerp(70, 35, eased);
-      featherSpread = lerp(0.16, 0.06, eased);
-      bindingLift = lerp(70, 30, eased);
+      featherLift = lerp(95, 40, eased);
+      featherSpread = lerp(0.18, 0.06, eased);
+      bindingLift = lerp(90, 30, eased);
       corkGlow = lerp(0.3, 1, eased);
-      openAmount = lerp(0.85, 0.5, eased);
+      openAmount = lerp(0.9, 0.55, eased);
       tiltY = lerp(-2, -4, eased);
       break;
   }

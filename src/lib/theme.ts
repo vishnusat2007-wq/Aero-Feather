@@ -19,8 +19,8 @@ export function resolveTheme(): Theme {
 
 export function applyTheme(theme: Theme) {
   const root = document.documentElement;
-  root.classList.toggle("dark", theme === "dark");
-  root.classList.toggle("light", theme === "light");
+  root.classList.remove("dark", "light");
+  root.classList.add(theme);
   root.style.colorScheme = theme;
 }
 
@@ -30,5 +30,5 @@ export function persistTheme(theme: Theme) {
 }
 
 export function getInitialThemeScript() {
-  return `(function(){try{var k='aero-feather-theme';var s=localStorage.getItem(k);var t=s==='light'||s==='dark'?s:'dark';var r=document.documentElement;r.classList.toggle('dark',t==='dark');r.classList.toggle('light',t==='light');r.style.colorScheme=t;}catch(e){document.documentElement.classList.add('dark');}})();`;
+  return `(function(){try{var k='aero-feather-theme';var s=localStorage.getItem(k);var t=s==='light'||s==='dark'?s:'dark';var r=document.documentElement;r.classList.remove('dark','light');r.classList.add(t);r.style.colorScheme=t;}catch(e){document.documentElement.classList.add('dark');}})();`;
 }

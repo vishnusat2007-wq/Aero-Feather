@@ -63,17 +63,26 @@ export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Pr
     const el = trackRef.current;
     if (!el) return;
     const rect = el.getBoundingClientRect();
-    const scrollable = el.offsetHeight - window.innerHeight;
-    if (scrollable <= 0) return;
+    const scrollable = Math.max(1, el.offsetHeight - window.innerHeight);
     setProgress(Math.max(0, Math.min(1, -rect.top / scrollable)));
   }, []);
 
   useEffect(() => {
+    let raf = 0;
+    const onScroll = () => {
+      document.documentElement.classList.add("af-hero-scrolling");
+      if (raf) return;
+      raf = requestAnimationFrame(() => {
+        raf = 0;
+        updateProgress();
+      });
+    };
     updateProgress();
-    const onScroll = () => requestAnimationFrame(updateProgress);
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", updateProgress);
     return () => {
+      if (raf) cancelAnimationFrame(raf);
+      document.documentElement.classList.remove("af-hero-scrolling");
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", updateProgress);
     };
@@ -96,7 +105,7 @@ export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Pr
 
   return (
     <div ref={trackRef} className="relative h-[500vh]">
-      <div className="sticky top-0 grid h-[100svh] grid-rows-[1fr_auto] overflow-visible pt-[4.5rem]">
+      <div className="sticky top-0 grid h-[100svh] grid-rows-[1fr_auto] overflow-visible lg:pt-0">
         {/* Shuttle stage — centred, kept clear of text zones */}
         <div
           className="relative flex min-h-0 items-center justify-center px-2 pb-2"
@@ -265,11 +274,14 @@ export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Pr
                 </div>
               </div>
 
-              {/* Assembled view — only when fully closed */}
+              {/* Assembled view — opaque until peel starts, then fades out */}
               <div
                 className="pointer-events-none absolute inset-0 z-40"
                 style={{
-                  opacity: Math.max(0, 1 - anim.openAmount * 10),
+                  opacity:
+                    anim.openAmount < 0.06
+                      ? 1
+                      : Math.max(0, 1 - (anim.openAmount - 0.06) * 12),
                 }}
               >
                 <Image
