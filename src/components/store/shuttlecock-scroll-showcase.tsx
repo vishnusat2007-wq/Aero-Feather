@@ -6,13 +6,13 @@ import { cn } from "@/lib/utils";
 import {
   CHAPTERS,
   CLOSED_PROGRESS,
-  getChapterIndex,
-  getChapterProgress,
-  getHeroStage,
+  REVERSE_CLOSE_SPAN_DESKTOP,
+  REVERSE_CLOSE_SPAN_MOBILE,
   getScrollAnim,
   HIGHLIGHT_ZONES,
-  isFullyClosed,
+  isAssembledPose,
   type HeroStage,
+  type ScrollDirection,
 } from "@/components/store/shuttlecock-scroll-story";
 
 export type { HeroStage };
@@ -29,6 +29,18 @@ function subscribeReducedMotion(cb: () => void) {
 
 function getReducedMotionSnapshot() {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+function subscribeDesktopCloseSpan(cb: () => void) {
+  const mq = window.matchMedia("(min-width: 1024px)");
+  mq.addEventListener("change", cb);
+  return () => mq.removeEventListener("change", cb);
+}
+
+function getDesktopCloseSpanSnapshot() {
+  return window.matchMedia("(min-width: 1024px)").matches
+    ? REVERSE_CLOSE_SPAN_DESKTOP
+    : REVERSE_CLOSE_SPAN_MOBILE;
 }
 
 type Props = {
@@ -52,37 +64,74 @@ function ShuttleImage({ className, style }: { className?: string; style?: React.
   );
 }
 
+type Scrub = {
+  progress: number;
+  direction: ScrollDirection;
+  peak: number;
+};
+
+const INITIAL_SCRUB: Scrub = { progress: 0, direction: "forward", peak: 0 };
+
+function readTrackProgress(el: HTMLElement): number {
+  const rect = el.getBoundingClientRect();
+  // Layout viewport only — visualViewport.offsetTop inflates Android progress
+  // so reverse scroll never reaches the assembled start pose.
+  const scrollable = Math.max(1, el.offsetHeight - window.innerHeight);
+  return -rect.top / scrollable;
+}
+
 export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Props) {
   const trackRef = useRef<HTMLDivElement>(null);
-  const [progress, setProgress] = useState(0);
+  const lastRawRef = useRef(0);
+  const peakRef = useRef(0);
+  const directionRef = useRef<ScrollDirection>("forward");
+  const [scrub, setScrub] = useState<Scrub>(INITIAL_SCRUB);
   const reducedMotion = useSyncExternalStore(
     subscribeReducedMotion,
     getReducedMotionSnapshot,
     () => false,
   );
 
-  const updateProgress = useCallback(() => {
+  const applyProgress = useCallback((raw: number, settled: boolean) => {
+    const startSlackPx = settled
+      ? Math.max(140, window.innerHeight * 0.2)
+      : Math.max(64, window.innerHeight * 0.08);
     const el = trackRef.current;
-    if (!el) return;
-    const viewH =
-      window.visualViewport && window.visualViewport.height > 0
-        ? window.visualViewport.height
-        : window.innerHeight;
-    const rect = el.getBoundingClientRect();
-    const passed = -rect.top + (window.visualViewport?.offsetTop ?? 0);
-    const scrollable = Math.max(1, el.offsetHeight - viewH);
-    const raw = passed / scrollable;
-    // Snap the ends so reverse/forward always complete (Android often stalls near 0).
-    if (raw <= CLOSED_PROGRESS) {
-      setProgress(0);
-      return;
+    const nearStart = el ? el.getBoundingClientRect().top > -startSlackPx : raw <= 0;
+    const snapClosed = settled ? CLOSED_PROGRESS : 0.03;
+    const snapOpen = settled ? 0.02 : 0.015;
+
+    let progress = Math.max(0, Math.min(1, raw));
+    if (nearStart || raw <= snapClosed) progress = 0;
+    else if (raw >= 1 - snapOpen) progress = 1;
+
+    const prev = lastRawRef.current;
+    let direction = directionRef.current;
+    let peak = peakRef.current;
+    if (progress <= 0) {
+      direction = "forward";
+      peak = 0;
+    } else if (progress > prev + 0.003) {
+      direction = "forward";
+      peak = progress;
+    } else if (progress < prev - 0.003) {
+      direction = "reverse";
     }
-    if (raw >= 1 - CLOSED_PROGRESS) {
-      setProgress(1);
-      return;
-    }
-    setProgress(Math.max(0, Math.min(1, raw)));
+
+    lastRawRef.current = progress;
+    peakRef.current = peak;
+    directionRef.current = direction;
+    setScrub({ progress, direction, peak });
   }, []);
+
+  const updateProgress = useCallback(
+    (settled = false) => {
+      const el = trackRef.current;
+      if (!el) return;
+      applyProgress(readTrackProgress(el), settled);
+    },
+    [applyProgress],
+  );
 
   useEffect(() => {
     let raf = 0;
@@ -91,52 +140,63 @@ export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Pr
       if (raf) return;
       raf = requestAnimationFrame(() => {
         raf = 0;
-        updateProgress();
+        updateProgress(false);
       });
     };
     const onSettle = () => {
       if (raf) cancelAnimationFrame(raf);
       raf = 0;
-      updateProgress();
+      updateProgress(true);
     };
-    updateProgress();
+    updateProgress(true);
     window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", updateProgress);
+    window.addEventListener("resize", onSettle);
     window.addEventListener("touchend", onSettle, { passive: true });
+    window.addEventListener("pointerup", onSettle, { passive: true });
     window.addEventListener("scrollend", onSettle);
     const vv = window.visualViewport;
-    vv?.addEventListener("resize", updateProgress);
-    vv?.addEventListener("scroll", onScroll);
+    vv?.addEventListener("resize", onSettle);
     return () => {
       if (raf) cancelAnimationFrame(raf);
       document.documentElement.classList.remove("af-hero-scrolling");
       window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", updateProgress);
+      window.removeEventListener("resize", onSettle);
       window.removeEventListener("touchend", onSettle);
+      window.removeEventListener("pointerup", onSettle);
       window.removeEventListener("scrollend", onSettle);
-      vv?.removeEventListener("resize", updateProgress);
-      vv?.removeEventListener("scroll", onScroll);
+      vv?.removeEventListener("resize", onSettle);
     };
   }, [updateProgress]);
 
-  const effectiveProgress = reducedMotion ? 0.42 : progress;
-  const anim = getScrollAnim(effectiveProgress);
-  const chapterIdx = getChapterIndex(effectiveProgress);
-  const chapterLocal = getChapterProgress(effectiveProgress);
-  const chapter = CHAPTERS[chapterIdx];
+  const closeSpan = useSyncExternalStore(
+    subscribeDesktopCloseSpan,
+    getDesktopCloseSpanSnapshot,
+    () => REVERSE_CLOSE_SPAN_DESKTOP,
+  );
+
+  const effectiveProgress = reducedMotion ? 0.42 : scrub.progress;
+  const anim = getScrollAnim(
+    effectiveProgress,
+    reducedMotion
+      ? undefined
+      : { direction: scrub.direction, peak: scrub.peak, closeSpan },
+  );
+  const chapterIdx = anim.chapter;
+  const chapterLocal = anim.local;
+  const chapter = CHAPTERS[chapterIdx] ?? CHAPTERS[0];
   const highlight = anim.highlight;
 
   useEffect(() => {
-    onStageChange?.(getHeroStage(effectiveProgress));
+    onStageChange?.({ num: chapter.num, label: chapter.label });
     onChapterChange?.(chapterIdx);
-  }, [effectiveProgress, onStageChange, onChapterChange, chapterIdx]);
+  }, [chapter.num, chapter.label, onStageChange, onChapterChange, chapterIdx]);
 
   const featherScale = 1 + anim.featherSpread;
-  const closed = isFullyClosed(effectiveProgress);
+  const closed = isAssembledPose(anim);
   const gapVisible = !closed && anim.openAmount > 0.08;
 
   return (
-    <div ref={trackRef} className="relative h-[360svh] lg:h-[440vh]">
+    <div ref={trackRef} className="relative h-[300svh] lg:h-[440vh]">
       <div className="sticky top-0 grid h-[100svh] grid-rows-[1fr_auto] overflow-hidden pt-16 lg:overflow-visible lg:pt-4">
         {/* Shuttle stage — centred, kept clear of text zones */}
         <div
@@ -148,7 +208,7 @@ export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Pr
           <div
             className={cn(
               "absolute left-1/2 top-1 z-40 flex -translate-x-1/2 flex-col items-center gap-1 transition-opacity duration-300 sm:top-2 lg:top-0",
-              progress > 0.05 ? "opacity-0 pointer-events-none" : "opacity-90",
+              closed ? "opacity-90" : "opacity-0 pointer-events-none",
             )}
           >
             <span className="rounded-md border border-af-cyan/25 bg-af-bg/80 px-3 py-1.5 text-[10px] font-semibold tracking-[0.18em] text-af-cyan uppercase backdrop-blur-sm">
