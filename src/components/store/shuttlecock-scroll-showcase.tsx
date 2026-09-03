@@ -6,10 +6,8 @@ import { cn } from "@/lib/utils";
 import {
   CHAPTERS,
   getChapterIndex,
-  getChapterProgress,
   getHeroStage,
   getScrollAnim,
-  HIGHLIGHT_ZONES,
   type HeroStage,
 } from "@/components/store/shuttlecock-scroll-story";
 
@@ -33,21 +31,6 @@ type Props = {
   onStageChange?: (stage: HeroStage) => void;
   onChapterChange?: (index: number) => void;
 };
-
-function ShuttleImage({ className, style }: { className?: string; style?: React.CSSProperties }) {
-  return (
-    <Image
-      src={SHUTTLE_SRC}
-      alt=""
-      width={IMG_W}
-      height={IMG_H}
-      priority
-      draggable={false}
-      className={cn("pointer-events-none absolute left-0 w-full select-none object-contain object-top", className)}
-      style={{ height: "100%", ...style }}
-    />
-  );
-}
 
 export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Props) {
   const trackRef = useRef<HTMLDivElement>(null);
@@ -77,14 +60,11 @@ export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Pr
       const target = rawRef.current;
       const current = smoothRef.current;
       const delta = target - current;
-      const next = Math.abs(delta) < 0.0006 ? target : current + delta * 0.22;
+      const next = Math.abs(delta) < 0.0005 ? target : current + delta * 0.2;
       smoothRef.current = next;
       setProgress(next);
-      if (Math.abs(target - next) >= 0.0006) {
-        raf = requestAnimationFrame(tick);
-      } else {
-        raf = 0;
-      }
+      if (Math.abs(target - next) >= 0.0005) raf = requestAnimationFrame(tick);
+      else raf = 0;
     };
 
     const queue = () => {
@@ -114,11 +94,9 @@ export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Pr
   const effectiveProgress = reducedMotion ? 0.42 : progress;
   const anim = getScrollAnim(effectiveProgress);
   const chapterIdx = getChapterIndex(effectiveProgress);
-  const chapterLocal = getChapterProgress(effectiveProgress);
   const chapter = CHAPTERS[chapterIdx];
-  const highlight = anim.highlight;
-  const peeled = anim.openAmount > 0.05;
-  const showCallouts = peeled && !anim.closing;
+  const showGhosts = anim.openAmount > 0.02;
+  const showCallouts = showGhosts && !anim.closing;
 
   useEffect(() => {
     onStageChange?.(getHeroStage(effectiveProgress));
@@ -126,9 +104,10 @@ export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Pr
   }, [effectiveProgress, onStageChange, onChapterChange, chapterIdx]);
 
   const featherScale = 1 + anim.featherSpread;
+  const baseOpacity = 1 - anim.openAmount * 0.28;
 
   return (
-    <div ref={trackRef} className="relative h-[520vh]">
+    <div ref={trackRef} className="relative h-[560vh]">
       <div className="sticky top-0 grid h-[100svh] grid-rows-[1fr_auto] overflow-hidden pt-16 lg:overflow-visible lg:pt-4">
         <div
           className="relative flex min-h-0 items-center justify-center px-2 pb-2"
@@ -162,130 +141,11 @@ export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Pr
             }}
           >
             <div
-              className="relative mx-auto w-full overflow-visible"
-              style={{
-                aspectRatio: `${IMG_W} / ${IMG_H}`,
-                maxHeight: "min(64vh, 580px)",
-              }}
+              className="relative mx-auto w-full"
+              style={{ aspectRatio: `${IMG_W} / ${IMG_H}`, maxHeight: "min(64vh, 580px)" }}
             >
-              {showCallouts && anim.featherLift > 10 && (
-                <div
-                  className="pointer-events-none absolute left-1/2 z-0 -translate-x-1/2 rounded border border-af-cyan/30 bg-af-bg/80 px-2 py-0.5 text-[8px] font-bold tracking-widest text-af-cyan uppercase backdrop-blur-sm"
-                  style={{
-                    top: `calc(44% - ${anim.featherLift}px - 14px)`,
-                    opacity: Math.min(1, anim.openAmount * 1.6),
-                  }}
-                >
-                  Feathers
-                </div>
-              )}
-              {showCallouts && anim.bindingLift > 10 && (
-                <div
-                  className="pointer-events-none absolute left-1/2 z-0 -translate-x-1/2 rounded border border-af-cyan/30 bg-af-bg/80 px-2 py-0.5 text-[8px] font-bold tracking-widest text-af-cyan uppercase backdrop-blur-sm"
-                  style={{
-                    top: `calc(48% - ${anim.bindingLift}px - 14px)`,
-                    opacity: Math.min(1, anim.openAmount * 1.6),
-                  }}
-                >
-                  Binding
-                </div>
-              )}
-
-              {showCallouts && (
-                <svg className="pointer-events-none absolute inset-0 z-[5] h-full w-full overflow-visible" aria-hidden>
-                  {anim.featherLift > 12 && (
-                    <line
-                      x1="50%"
-                      y1={`${44 - anim.featherLift * 0.08}%`}
-                      x2="50%"
-                      y2="44%"
-                      stroke="#20B6E8"
-                      strokeWidth="2"
-                      strokeDasharray="4 5"
-                      opacity={0.45}
-                    />
-                  )}
-                  {anim.bindingLift > 12 && (
-                    <line
-                      x1="50%"
-                      y1={`${52 - anim.bindingLift * 0.08}%`}
-                      x2="50%"
-                      y2="52%"
-                      stroke="#20B6E8"
-                      strokeWidth="2"
-                      strokeDasharray="4 5"
-                      opacity={0.45}
-                    />
-                  )}
-                </svg>
-              )}
-
-              {/* Cork stays planted */}
-              <div className="absolute inset-x-0 bottom-0 z-10 h-[52%] overflow-hidden">
-                <div className="absolute inset-x-0 bottom-0 h-[192%]">
-                  <ShuttleImage
-                    className="bottom-0 top-auto"
-                    style={{
-                      filter:
-                        highlight === "cork"
-                          ? `brightness(1.1) drop-shadow(0 0 ${16 + anim.corkGlow * 24}px rgba(32,182,232,0.45))`
-                          : undefined,
-                    }}
-                  />
-                </div>
-              </div>
-
-              {/* Binding band — no box, only translates */}
-              <div
-                className="absolute inset-x-[6%] z-20 overflow-hidden"
-                style={{
-                  top: "40%",
-                  height: "13%",
-                  opacity: peeled ? 1 : 0,
-                  transform: `translate3d(0, -${anim.bindingLift}px, ${anim.bindingLift}px)`,
-                  willChange: "transform",
-                }}
-              >
-                <div className="absolute inset-x-[-8%] top-[-320%] h-[1500%]">
-                  <ShuttleImage
-                    style={{
-                      filter:
-                        highlight === "binding"
-                          ? "brightness(1.1) drop-shadow(0 0 14px rgba(32,182,232,0.4))"
-                          : undefined,
-                    }}
-                  />
-                </div>
-              </div>
-
-              {/* Feather cone */}
-              <div
-                className="absolute inset-x-0 top-0 z-30 overflow-hidden"
-                style={{
-                  height: "44%",
-                  opacity: peeled ? 1 : 0,
-                  transform: `translate3d(0, -${anim.featherLift}px, ${anim.featherLift}px) scale(${featherScale})`,
-                  transformOrigin: "50% 100%",
-                  willChange: "transform",
-                }}
-              >
-                <div className="absolute inset-x-0 top-0 h-[227%]">
-                  <ShuttleImage
-                    style={{
-                      filter:
-                        highlight === "feathers" || highlight === "geometry"
-                          ? "brightness(1.08) drop-shadow(0 0 12px rgba(32,182,232,0.3))"
-                          : undefined,
-                    }}
-                  />
-                </div>
-              </div>
-
-              {/* Intact assembled shuttle — fades out as it opens, back in as it closes */}
-              <div
-                className="pointer-events-none absolute inset-0 z-40"
-                style={{ opacity: anim.assembledOpacity }}
-              >
+              {/* Always-intact shuttle — never sliced away */}
+              <div className="absolute inset-0 z-20" style={{ opacity: baseOpacity }}>
                 <Image
                   src={SHUTTLE_SRC}
                   alt="Premium goose-feather badminton shuttlecock"
@@ -293,51 +153,116 @@ export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Pr
                   height={IMG_H}
                   priority
                   className="h-full w-full object-contain"
+                  style={{
+                    filter:
+                      anim.highlight === "cork"
+                        ? `drop-shadow(0 0 ${12 + anim.corkGlow * 20}px rgba(32,182,232,0.4))`
+                        : undefined,
+                  }}
                 />
               </div>
 
-              {highlight && highlight !== "intro" && showCallouts && (
+              {/* Lifted feather ghost — settles back onto the body when closing */}
+              {showGhosts && (
                 <div
-                  className="pointer-events-none absolute z-50 rounded-[42%] border border-af-cyan/40"
+                  className="pointer-events-none absolute inset-x-0 top-0 z-30 overflow-hidden"
                   style={{
-                    top: `${HIGHLIGHT_ZONES[highlight].top}%`,
-                    left: `${HIGHLIGHT_ZONES[highlight].left}%`,
-                    width: `${HIGHLIGHT_ZONES[highlight].width}%`,
-                    height: `${HIGHLIGHT_ZONES[highlight].height}%`,
-                    opacity: 0.28 + chapterLocal * 0.2,
-                    boxShadow: "0 0 20px rgba(32,182,232,0.2)",
-                    transform: `translateY(-${
-                      highlight === "feathers" || highlight === "geometry"
-                        ? anim.featherLift
-                        : highlight === "binding"
-                          ? anim.bindingLift
-                          : 0
-                    }px)`,
+                    height: "46%",
+                    opacity: anim.openAmount,
+                    transform: `translate3d(0, -${anim.featherLift}px, 0) scale(${featherScale})`,
+                    transformOrigin: "50% 100%",
+                    willChange: "transform, opacity",
+                    filter:
+                      anim.highlight === "feathers" || anim.highlight === "geometry"
+                        ? "drop-shadow(0 10px 18px rgba(32,182,232,0.28))"
+                        : "drop-shadow(0 10px 16px rgba(0,0,0,0.25))",
                   }}
-                />
+                >
+                  <div className="absolute inset-x-0 top-0 h-[218%]">
+                    <Image
+                      src={SHUTTLE_SRC}
+                      alt=""
+                      width={IMG_W}
+                      height={IMG_H}
+                      className="h-full w-full object-contain object-top"
+                    />
+                  </div>
+                </div>
               )}
 
-              {highlight === "geometry" && showCallouts && (
+              {/* Lifted binding ghost */}
+              {showGhosts && anim.bindingLift > 0.5 && (
+                <div
+                  className="pointer-events-none absolute inset-x-[10%] z-30 overflow-hidden"
+                  style={{
+                    top: "40%",
+                    height: "14%",
+                    opacity: Math.min(1, anim.openAmount * 1.15),
+                    transform: `translate3d(0, -${anim.bindingLift}px, 0)`,
+                    willChange: "transform, opacity",
+                    filter:
+                      anim.highlight === "binding"
+                        ? "drop-shadow(0 6px 12px rgba(32,182,232,0.3))"
+                        : "drop-shadow(0 6px 10px rgba(0,0,0,0.2))",
+                  }}
+                >
+                  <div className="absolute inset-x-[-12%] top-[-300%] h-[1400%]">
+                    <Image
+                      src={SHUTTLE_SRC}
+                      alt=""
+                      width={IMG_W}
+                      height={IMG_H}
+                      className="h-full w-full object-contain object-top"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {showCallouts && anim.featherLift > 16 && (
+                <div
+                  className="pointer-events-none absolute left-1/2 z-40 -translate-x-1/2 rounded border border-af-cyan/30 bg-af-bg/80 px-2 py-0.5 text-[8px] font-bold tracking-widest text-af-cyan uppercase backdrop-blur-sm"
+                  style={{
+                    top: `calc(18% - ${anim.featherLift * 0.15}px)`,
+                    opacity: Math.min(1, anim.openAmount),
+                  }}
+                >
+                  Feathers
+                </div>
+              )}
+              {showCallouts && anim.bindingLift > 16 && (
+                <div
+                  className="pointer-events-none absolute left-1/2 z-40 -translate-x-1/2 rounded border border-af-cyan/30 bg-af-bg/80 px-2 py-0.5 text-[8px] font-bold tracking-widest text-af-cyan uppercase backdrop-blur-sm"
+                  style={{
+                    top: `calc(42% - ${anim.bindingLift * 0.2}px)`,
+                    opacity: Math.min(1, anim.openAmount),
+                  }}
+                >
+                  Binding
+                </div>
+              )}
+
+              {anim.highlight === "geometry" && showCallouts && (
                 <svg
-                  className="pointer-events-none absolute inset-0 z-[45] h-full w-full overflow-visible"
+                  className="pointer-events-none absolute inset-0 z-40 h-full w-full overflow-visible"
                   style={{
                     transform: `translateY(-${anim.featherLift}px) scale(${featherScale})`,
                     transformOrigin: "50% 100%",
+                    opacity: anim.openAmount,
                   }}
                   aria-hidden
                 >
-                  {[28, 36, 44].map((y, i) => (
+                  {[26, 34, 42].map((y, i) => (
                     <ellipse
                       key={y}
                       cx="50%"
                       cy={`${y}%`}
-                      rx={`${26 + i * 4}%`}
-                      ry="3.5%"
+                      rx={`${24 + i * 4}%`}
+                      ry="3%"
                       fill="none"
                       stroke="#20B6E8"
-                      strokeWidth="1.75"
-                      opacity={0.5 - i * 0.1}
-                      strokeDasharray="6 4"
+                      strokeWidth="1.5"
+                      opacity={0.45 - i * 0.08}
+                      strokeDasharray="5 4"
                     />
                   ))}
                 </svg>
