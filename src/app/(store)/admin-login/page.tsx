@@ -3,13 +3,17 @@ import { redirect } from "next/navigation";
 import { LoginForm } from "@/components/store/login-form";
 import { LogoMark } from "@/components/store/logo";
 import { getCurrentProfile } from "@/lib/data";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 
 export default async function AdminLoginPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  let user = null;
+  if (isSupabaseConfigured()) {
+    const supabase = await createClient();
+    const {
+      data: { user: signedInUser },
+    } = await supabase.auth.getUser();
+    user = signedInUser;
+  }
   const profile = user ? await getCurrentProfile() : null;
 
   if (profile?.role === "admin") {
