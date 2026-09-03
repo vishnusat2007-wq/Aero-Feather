@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/input";
 import { createClient } from "@/lib/supabase/client";
@@ -17,7 +16,6 @@ export function LoginForm({
   defaultMode = "login",
   allowSignup = true,
 }: Props) {
-  const router = useRouter();
   const [mode, setMode] = useState<"login" | "signup">(defaultMode);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -49,9 +47,8 @@ export function LoginForm({
       }
 
       if (data.session && data.user) {
-        await fetch("/api/auth/setup-profile", { method: "POST" });
-        router.push(next);
-        router.refresh();
+        void fetch("/api/auth/setup-profile", { method: "POST" }).catch(() => {});
+        window.location.assign(next);
         return;
       }
 
@@ -73,10 +70,8 @@ export function LoginForm({
       return;
     }
 
-    await fetch("/api/auth/setup-profile", { method: "POST" });
-
-    router.push(next);
-    router.refresh();
+    void fetch("/api/auth/setup-profile", { method: "POST" }).catch(() => {});
+    window.location.assign(next);
   }
 
   return (
