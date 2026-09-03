@@ -135,8 +135,8 @@ export function getScrollAnim(progress: number): ScrollViewAnim {
   const inspect = Math.max(feathers, geometry, binding, cork);
   const closing = p >= 0.76;
 
-  const imgY = feathers * 42 + geometry * 22 + binding * -6 + cork * -48;
-  const imgScale = 1 + inspect * 0.12;
+  const imgY = feathers * 16 + geometry * 8 + binding * -4 + cork * -18;
+  const imgScale = 1 + inspect * 0.06;
   const tiltY = lerp(-0.6, 2.4, inspect);
   const tiltX = -0.5 + Math.sin(p * Math.PI) * 0.9;
   const glow = inspect;

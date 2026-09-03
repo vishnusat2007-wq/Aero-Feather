@@ -111,7 +111,7 @@ export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Pr
 
   return (
     <div ref={trackRef} className="relative h-[560vh]">
-      <div className="sticky top-0 grid h-[100svh] grid-rows-[1fr_auto] overflow-hidden pt-16 lg:overflow-hidden lg:pt-4">
+      <div className="sticky top-0 grid h-[100svh] grid-rows-[1fr_auto] overflow-visible pt-16 lg:pt-4">
         <div className="relative flex min-h-0 items-center justify-center px-2 pb-2">
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_38%,rgba(255,255,255,0.12)_0%,rgba(32,182,232,0.08)_38%,transparent_72%)]" />
 
@@ -128,7 +128,7 @@ export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Pr
           </div>
 
             <div
-            className="relative z-10 w-full max-w-[400px] overflow-hidden bg-transparent lg:max-w-[420px]"
+            className="relative z-10 w-full max-w-[400px] overflow-visible bg-transparent lg:max-w-[420px]"
             style={{
               aspectRatio: `${IMG_W} / ${IMG_H}`,
               maxHeight: "min(68vh, 620px)",
