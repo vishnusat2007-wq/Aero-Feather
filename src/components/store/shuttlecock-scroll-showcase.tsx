@@ -6,6 +6,8 @@ import { cn } from "@/lib/utils";
 import {
   CHAPTERS,
   HIGHLIGHT_ZONES,
+  LAYER_CLIPS,
+  PART_CALLOUTS,
   getChapterIndex,
   getHeroStage,
   getScrollAnim,
@@ -33,12 +35,50 @@ type Props = {
   onChapterChange?: (index: number) => void;
 };
 
-const PART_LABEL: Record<string, { text: string; top: string }> = {
-  feathers: { text: "Feathers", top: "16%" },
-  geometry: { text: "Geometry", top: "32%" },
-  binding: { text: "Binding", top: "50%" },
-  cork: { text: "Cork", top: "78%" },
-};
+function ShuttleLayer({
+  clipPath,
+  transform,
+  transformOrigin = "50% 50%",
+  zIndex,
+  glow,
+  alt,
+}: {
+  clipPath: string;
+  transform: string;
+  transformOrigin?: string;
+  zIndex: number;
+  glow?: boolean;
+  alt?: string;
+}) {
+  return (
+    <div
+      className="absolute inset-0"
+      style={{
+        clipPath,
+        WebkitClipPath: clipPath,
+        transform,
+        transformOrigin,
+        zIndex,
+        willChange: "transform",
+      }}
+    >
+      <Image
+        src={SHUTTLE_SRC}
+        alt={alt ?? ""}
+        width={IMG_W}
+        height={IMG_H}
+        priority
+        draggable={false}
+        className="h-full w-full object-contain"
+        style={{
+          filter: glow
+            ? "brightness(1.06) drop-shadow(0 0 16px rgba(32,182,232,0.32))"
+            : undefined,
+        }}
+      />
+    </div>
+  );
+}
 
 export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Props) {
   const trackRef = useRef<HTMLDivElement>(null);
@@ -99,12 +139,23 @@ export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Pr
     };
   }, [readRawProgress]);
 
-  const effectiveProgress = reducedMotion ? 0.12 : progress;
+  const effectiveProgress = reducedMotion ? 0 : progress;
   const anim = getScrollAnim(effectiveProgress);
   const chapterIdx = getChapterIndex(effectiveProgress);
   const chapter = CHAPTERS[chapterIdx];
-  const label = anim.highlight ? PART_LABEL[anim.highlight] : null;
+  const callout = anim.highlight ? PART_CALLOUTS.find((c) => c.id === anim.highlight) : null;
   const zone = anim.highlight ? HIGHLIGHT_ZONES[anim.highlight] : null;
+  const opened = anim.openAmount > 0.12;
+  const featherScale = 1 + anim.featherSpread;
+
+  const labelLift =
+    anim.highlight === "feathers" || anim.highlight === "geometry"
+      ? anim.featherLift
+      : anim.highlight === "binding"
+        ? anim.bindingLift
+        : anim.highlight === "cork"
+          ? -anim.corkDrop
+          : 0;
 
   useEffect(() => {
     onStageChange?.(getHeroStage(effectiveProgress));
@@ -112,7 +163,7 @@ export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Pr
   }, [effectiveProgress, onStageChange, onChapterChange, chapterIdx]);
 
   return (
-    <div ref={trackRef} className="relative h-[640vh]">
+    <div ref={trackRef} className="relative h-[600vh]">
       <div className="sticky top-0 grid h-[100svh] grid-rows-[1fr_auto] overflow-visible pt-16 lg:pt-4">
         <div
           className="relative flex min-h-0 items-center justify-center overflow-visible px-2 pb-2"
@@ -127,74 +178,128 @@ export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Pr
             )}
           >
             <span className="rounded-md border border-af-cyan/25 bg-af-bg/80 px-3 py-1.5 text-[10px] font-semibold tracking-[0.18em] text-af-cyan uppercase backdrop-blur-sm">
-              Scroll to explore each part
+              Scroll to open each part
             </span>
             <span className="h-5 w-px animate-af-float bg-af-cyan/60" />
           </div>
 
-          {/* Padded stage: image is inset so inspect/close never clips tips or cork */}
-          <div className="relative z-10 flex h-full w-full max-w-[460px] items-center justify-center overflow-visible px-[7%] py-[9%] lg:max-w-[500px]">
+          <div className="relative z-10 flex h-full w-full max-w-[460px] items-center justify-center overflow-visible px-[8%] py-[12%] lg:max-w-[500px]">
             <div
               className="relative w-full overflow-visible bg-transparent"
               style={{
                 aspectRatio: `${IMG_W} / ${IMG_H}`,
-                maxHeight: "min(56vh, 500px)",
+                maxHeight: "min(54vh, 480px)",
+                transform: `
+                  translate3d(0, ${anim.imgY}px, 0)
+                  scale(${anim.imgScale})
+                  rotateY(${anim.tiltY}deg)
+                  rotateX(${anim.tiltX}deg)
+                `,
+                transformStyle: "preserve-3d",
+                willChange: "transform",
               }}
             >
-              <div
-                className="absolute inset-0"
-                style={{
-                  transform: `
-                    translate3d(0, ${anim.imgY}px, 0)
-                    scale(${anim.imgScale})
-                    rotateY(${anim.tiltY}deg)
-                    rotateX(${anim.tiltX}deg)
-                  `,
-                  transformOrigin: "50% 78%",
-                  willChange: "transform",
-                }}
-              >
-                <Image
-                  src={SHUTTLE_SRC}
-                  alt="Premium goose-feather badminton shuttlecock"
-                  width={IMG_W}
-                  height={IMG_H}
-                  priority
-                  draggable={false}
-                  className="h-full w-full object-contain"
+              {opened && (
+                <svg className="pointer-events-none absolute inset-0 z-[5] h-full w-full overflow-visible" aria-hidden>
+                  <line
+                    x1="50%"
+                    y1={`${46 - anim.featherLift * 0.08}%`}
+                    x2="50%"
+                    y2={`${52 - anim.bindingLift * 0.06}%`}
+                    stroke="#20B6E8"
+                    strokeWidth="1.5"
+                    strokeDasharray="3 5"
+                    opacity={0.25 + anim.openAmount * 0.4}
+                  />
+                  <line
+                    x1="50%"
+                    y1={`${58 - anim.bindingLift * 0.05}%`}
+                    x2="50%"
+                    y2={`${70 + anim.corkDrop * 0.04}%`}
+                    stroke="#20B6E8"
+                    strokeWidth="1.5"
+                    strokeDasharray="3 5"
+                    opacity={0.25 + anim.openAmount * 0.4}
+                  />
+                </svg>
+              )}
+
+              <ShuttleLayer
+                clipPath={LAYER_CLIPS.cork}
+                zIndex={10}
+                glow={anim.highlight === "cork"}
+                alt="Premium goose-feather badminton shuttlecock"
+                transform={`translate3d(0, ${anim.corkDrop}px, 0)`}
+              />
+              <ShuttleLayer
+                clipPath={LAYER_CLIPS.binding}
+                zIndex={20}
+                glow={anim.highlight === "binding"}
+                transform={`translate3d(0, -${anim.bindingLift}px, ${anim.bindingLift * 0.25}px)`}
+              />
+              <ShuttleLayer
+                clipPath={LAYER_CLIPS.feathers}
+                zIndex={30}
+                glow={anim.highlight === "feathers" || anim.highlight === "geometry"}
+                transformOrigin="50% 100%"
+                transform={`translate3d(0, -${anim.featherLift}px, ${anim.featherLift * 0.3}px) scale(${featherScale})`}
+              />
+
+              {anim.highlight === "geometry" && (
+                <svg
+                  className="pointer-events-none absolute inset-0 z-[35] h-full w-full overflow-visible"
                   style={{
-                    filter: anim.glow
-                      ? `drop-shadow(0 0 ${12 + anim.glow * 22}px rgba(32,182,232,${0.16 + anim.glow * 0.22}))`
-                      : undefined,
+                    transform: `translateY(-${anim.featherLift}px) scale(${featherScale})`,
+                    transformOrigin: "50% 100%",
+                  }}
+                  aria-hidden
+                >
+                  {[30, 38, 46].map((y, i) => (
+                    <ellipse
+                      key={y}
+                      cx="50%"
+                      cy={`${y}%`}
+                      rx={`${22 + i * 4}%`}
+                      ry="2.6%"
+                      fill="none"
+                      stroke="#20B6E8"
+                      strokeWidth="1.25"
+                      opacity={0.55 - i * 0.12}
+                      strokeDasharray="5 4"
+                    />
+                  ))}
+                </svg>
+              )}
+
+              {zone && (
+                <div
+                  className="pointer-events-none absolute z-40 rounded-full border border-af-cyan/60 shadow-[0_0_18px_rgba(32,182,232,0.3)]"
+                  style={{
+                    top: `${zone.top}%`,
+                    left: `${zone.left}%`,
+                    width: `${zone.width}%`,
+                    height: `${zone.height}%`,
+                    opacity: 0.25 + anim.inspect * 0.55,
+                    transform: `translateY(-${labelLift}px)`,
                   }}
                 />
+              )}
 
-                {zone && (
-                  <div
-                    className="pointer-events-none absolute rounded-full border border-af-cyan/55 shadow-[0_0_18px_rgba(32,182,232,0.28)]"
-                    style={{
-                      top: `${zone.top}%`,
-                      left: `${zone.left}%`,
-                      width: `${zone.width}%`,
-                      height: `${zone.height}%`,
-                      opacity: 0.2 + anim.inspect * 0.65,
-                    }}
-                  />
-                )}
-              </div>
-
-              {label && (
+              {callout && (
                 <div
-                  className="pointer-events-none absolute left-1/2 z-20 -translate-x-1/2 rounded-md border border-af-cyan/30 bg-af-bg/80 px-2.5 py-1 text-[9px] font-bold tracking-[0.16em] text-af-cyan uppercase backdrop-blur-sm"
-                  style={{ top: label.top, opacity: 0.3 + anim.inspect * 0.7 }}
+                  className="pointer-events-none absolute left-1/2 z-50 -translate-x-1/2 rounded-md border border-af-cyan/30 bg-af-bg/80 px-2.5 py-1 text-[9px] font-bold tracking-[0.16em] text-af-cyan uppercase backdrop-blur-sm"
+                  style={{
+                    top: `calc(${callout.top}% - ${labelLift * 0.35}px)`,
+                    opacity: 0.35 + anim.inspect * 0.65,
+                  }}
                 >
-                  {label.text}
+                  {callout.text}
                 </div>
               )}
 
               {anim.assemblingLabel > 0.04 && (
                 <div
-                  className="pointer-events-none absolute left-1/2 top-[4%] z-20 -translate-x-1/2 rounded-md border border-af-cyan/25 bg-af-bg/70 px-2.5 py-1 text-[9px] font-bold tracking-[0.16em] text-af-cyan uppercase backdrop-blur-sm"
+                  className="pointer-events-none absolute left-1/2 top-[4%] z-50 -translate-x-1/2 rounded-md border border-af-cyan/25 bg-af-bg/70 px-2.5 py-1 text-[9px] font-bold tracking-[0.16em] text-af-cyan uppercase backdrop-blur-sm"
                   style={{ opacity: anim.assemblingLabel }}
                 >
                   Assembling

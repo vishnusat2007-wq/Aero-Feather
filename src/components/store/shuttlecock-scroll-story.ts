@@ -70,38 +70,43 @@ export const CHAPTERS: ChapterInfo[] = [
 
 /**
  *  0.00–0.07  assembled intro
- *  0.07–0.22  feathers
- *  0.22–0.38  geometry
- *  0.38–0.52  binding
- *  0.52–0.66  cork
- *  0.66–1.00  assemble / close — camera returns to identity
+ *  0.07–0.24  feathers lift
+ *  0.24–0.40  geometry (skirt stays open)
+ *  0.40–0.54  binding lifts
+ *  0.54–0.68  cork
+ *  0.68–1.00  assemble — every lift returns to 0
  */
-const CHAPTER_BOUNDS = [0, 0.07, 0.22, 0.38, 0.52, 0.66, 1] as const;
+const CHAPTER_BOUNDS = [0, 0.07, 0.24, 0.4, 0.54, 0.68, 1] as const;
 
-/** Camera waypoints. Start and end are the same complete shuttle. */
-const CAMERA = [
-  { p: 0.0, y: 0, s: 1, bloom: 0 },
-  { p: 0.07, y: 0, s: 1, bloom: 0 },
-  { p: 0.15, y: 6, s: 1.03, bloom: 1 },
-  { p: 0.3, y: 4, s: 1.028, bloom: 0.92 },
-  { p: 0.45, y: -2, s: 1.022, bloom: 0.78 },
-  { p: 0.58, y: -6, s: 1.02, bloom: 0.7 },
-  { p: 0.66, y: -3, s: 1.014, bloom: 0.35 },
-  { p: 0.78, y: 0, s: 1.02, bloom: 0.08 },
-  { p: 0.88, y: 0, s: 1.028, bloom: 0 },
-  { p: 0.96, y: 0, s: 1.006, bloom: 0 },
-  { p: 1.0, y: 0, s: 1, bloom: 0 },
-] as const;
+/** Full-width layers only — side insets created the old horizontal bar. */
+export const LAYER_CLIPS = {
+  feathers: "inset(0% 0% 46% 0%)",
+  binding: "inset(48% 0% 28% 0%)",
+  cork: "inset(66% 0% 0% 0%)",
+} as const;
 
 export const HIGHLIGHT_ZONES: Record<
   Exclude<ScrollChapter, "intro" | "assemble">,
   { top: number; left: number; width: number; height: number }
 > = {
-  feathers: { top: 6, left: 10, width: 80, height: 36 },
-  geometry: { top: 28, left: 16, width: 68, height: 22 },
-  binding: { top: 48, left: 24, width: 52, height: 14 },
-  cork: { top: 74, left: 30, width: 40, height: 24 },
+  feathers: { top: 8, left: 12, width: 76, height: 34 },
+  geometry: { top: 28, left: 18, width: 64, height: 20 },
+  binding: { top: 50, left: 26, width: 48, height: 12 },
+  cork: { top: 76, left: 32, width: 36, height: 22 },
 };
+
+export type PartCallout = {
+  id: Exclude<ScrollChapter, "intro" | "assemble">;
+  text: string;
+  top: number;
+};
+
+export const PART_CALLOUTS: PartCallout[] = [
+  { id: "feathers", text: "Feathers", top: 16 },
+  { id: "geometry", text: "Geometry", top: 32 },
+  { id: "binding", text: "Binding", top: 52 },
+  { id: "cork", text: "Cork", top: 78 },
+];
 
 function clamp01(v: number) {
   return Math.max(0, Math.min(1, v));
@@ -123,27 +128,6 @@ function ramp(p: number, a: number, b: number) {
 
 function pulse(p: number, a: number, b: number, c: number, d: number) {
   return ramp(p, a, b) * (1 - ramp(p, c, d));
-}
-
-function sampleCamera(p: number) {
-  const x = clamp01(p);
-  if (x <= CAMERA[0].p) return CAMERA[0];
-  const last = CAMERA[CAMERA.length - 1];
-  if (x >= last.p) return last;
-  for (let i = 1; i < CAMERA.length; i++) {
-    const prev = CAMERA[i - 1];
-    const next = CAMERA[i];
-    if (x <= next.p) {
-      const t = smootherstep((x - prev.p) / (next.p - prev.p));
-      return {
-        p: x,
-        y: lerp(prev.y, next.y, t),
-        s: lerp(prev.s, next.s, t),
-        bloom: lerp(prev.bloom, next.bloom, t),
-      };
-    }
-  }
-  return last;
 }
 
 export function getChapterIndex(progress: number): number {
@@ -185,34 +169,49 @@ export type ScrollViewAnim = {
   featherLift: number;
   featherSpread: number;
   bindingLift: number;
+  corkDrop: number;
   corkGlow: number;
   openAmount: number;
   assembledOpacity: number;
 };
 
-/** One intact shuttle. Inspect is a padded Ken Burns; close eases back to identity. */
+/** Slight breakup on scroll; every lift is 0 at start and end. */
 export function getScrollAnim(progress: number): ScrollViewAnim {
   const p = clamp01(progress);
   const chapter = getChapterIndex(p);
   const local = getChapterProgress(p);
-  const cam = sampleCamera(p);
 
-  const inspect = pulse(p, 0.07, 0.16, 0.58, 0.78);
+  const featherGate = pulse(p, 0.07, 0.18, 0.68, 0.9);
+  const geometryBoost = pulse(p, 0.24, 0.32, 0.36, 0.5);
+  const bindingGate = pulse(p, 0.38, 0.5, 0.7, 0.92);
+  const corkGate = pulse(p, 0.52, 0.6, 0.72, 0.9);
+  const openAmount = Math.max(featherGate, bindingGate, corkGate);
+  const inspect = openAmount;
   const closing = p >= CHAPTER_BOUNDS[5];
-  const settle = pulse(p, 0.78, 0.86, 0.9, 0.98);
-  const assemblingLabel = pulse(p, 0.66, 0.72, 0.88, 0.96);
+  const settle = pulse(p, 0.8, 0.88, 0.9, 0.98);
+  const assemblingLabel = pulse(p, 0.68, 0.74, 0.88, 0.96);
 
-  const tiltY = lerp(-0.4, 2.1, cam.bloom);
-  const tiltX = -0.35 + Math.sin(p * Math.PI) * 0.7;
-  const glow = Math.max(cam.bloom, settle * 0.85);
+  const featherLift = featherGate * (42 + geometryBoost * 10);
+  const featherSpread = featherGate * (0.055 + geometryBoost * 0.035);
+  const bindingLift = bindingGate * 24;
+  const corkDrop = corkGate * 12;
+  const corkGlow = corkGate;
+
+  const imgY = featherGate * -6 + corkGate * 5;
+  const imgScale = 1 + openAmount * 0.025 + settle * 0.012;
+  const tiltY = lerp(-0.4, 2.4, openAmount);
+  const tiltX = -0.4 + Math.sin(p * Math.PI) * 0.7;
+  const glow = Math.max(openAmount, settle * 0.8);
 
   const part =
-    chapter === 0 || chapter === 5 ? null : (CHAPTERS[chapter].id as Exclude<ScrollChapter, "intro" | "assemble">);
+    chapter === 0 || chapter === 5
+      ? null
+      : (CHAPTERS[chapter].id as Exclude<ScrollChapter, "intro" | "assemble">);
 
   return {
-    imgY: cam.y,
-    imgScale: cam.s,
-    bloom: cam.bloom,
+    imgY,
+    imgScale,
+    bloom: openAmount,
     tiltY,
     tiltX,
     glow,
@@ -223,20 +222,21 @@ export function getScrollAnim(progress: number): ScrollViewAnim {
     highlight: part,
     chapter,
     local,
-    featherLift: 0,
-    featherSpread: cam.bloom * 0.03,
-    bindingLift: 0,
-    corkGlow: pulse(p, 0.5, 0.56, 0.62, 0.74),
-    openAmount: cam.bloom,
-    assembledOpacity: 1,
+    featherLift,
+    featherSpread,
+    bindingLift,
+    corkDrop,
+    corkGlow,
+    openAmount,
+    assembledOpacity: 1 - openAmount,
   };
 }
 
 export function getCloseIntegrity(progress: number) {
   const anim = getScrollAnim(progress);
   return {
-    intact: anim.assembledOpacity === 1 && anim.featherLift === 0 && anim.bindingLift === 0,
-    atRest: Math.abs(anim.imgY) < 0.05 && Math.abs(anim.imgScale - 1) < 0.008,
+    intact: anim.featherLift < 0.4 && anim.bindingLift < 0.4 && anim.corkDrop < 0.4,
+    atRest: Math.abs(anim.imgY) < 0.05 && Math.abs(anim.imgScale - 1) < 0.01,
     closing: anim.closing,
   };
 }
