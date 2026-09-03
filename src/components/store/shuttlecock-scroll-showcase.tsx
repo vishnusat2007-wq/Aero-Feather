@@ -5,11 +5,13 @@ import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "
 import { cn } from "@/lib/utils";
 import {
   CHAPTERS,
+  CLOSED_PROGRESS,
   getChapterIndex,
   getChapterProgress,
   getHeroStage,
   getScrollAnim,
   HIGHLIGHT_ZONES,
+  isFullyClosed,
   type HeroStage,
 } from "@/components/store/shuttlecock-scroll-story";
 
@@ -62,9 +64,24 @@ export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Pr
   const updateProgress = useCallback(() => {
     const el = trackRef.current;
     if (!el) return;
+    const viewH =
+      window.visualViewport && window.visualViewport.height > 0
+        ? window.visualViewport.height
+        : window.innerHeight;
     const rect = el.getBoundingClientRect();
-    const scrollable = Math.max(1, el.offsetHeight - window.innerHeight);
-    setProgress(Math.max(0, Math.min(1, -rect.top / scrollable)));
+    const passed = -rect.top + (window.visualViewport?.offsetTop ?? 0);
+    const scrollable = Math.max(1, el.offsetHeight - viewH);
+    const raw = passed / scrollable;
+    // Snap the ends so reverse/forward always complete (Android often stalls near 0).
+    if (raw <= CLOSED_PROGRESS) {
+      setProgress(0);
+      return;
+    }
+    if (raw >= 1 - CLOSED_PROGRESS) {
+      setProgress(1);
+      return;
+    }
+    setProgress(Math.max(0, Math.min(1, raw)));
   }, []);
 
   useEffect(() => {
@@ -77,14 +94,28 @@ export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Pr
         updateProgress();
       });
     };
+    const onSettle = () => {
+      if (raf) cancelAnimationFrame(raf);
+      raf = 0;
+      updateProgress();
+    };
     updateProgress();
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", updateProgress);
+    window.addEventListener("touchend", onSettle, { passive: true });
+    window.addEventListener("scrollend", onSettle);
+    const vv = window.visualViewport;
+    vv?.addEventListener("resize", updateProgress);
+    vv?.addEventListener("scroll", onScroll);
     return () => {
       if (raf) cancelAnimationFrame(raf);
       document.documentElement.classList.remove("af-hero-scrolling");
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", updateProgress);
+      window.removeEventListener("touchend", onSettle);
+      window.removeEventListener("scrollend", onSettle);
+      vv?.removeEventListener("resize", updateProgress);
+      vv?.removeEventListener("scroll", onScroll);
     };
   }, [updateProgress]);
 
@@ -101,10 +132,11 @@ export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Pr
   }, [effectiveProgress, onStageChange, onChapterChange, chapterIdx]);
 
   const featherScale = 1 + anim.featherSpread;
-  const gapVisible = anim.openAmount > 0.08;
+  const closed = isFullyClosed(effectiveProgress);
+  const gapVisible = !closed && anim.openAmount > 0.08;
 
   return (
-    <div ref={trackRef} className="relative h-[500vh]">
+    <div ref={trackRef} className="relative h-[360svh] lg:h-[440vh]">
       <div className="sticky top-0 grid h-[100svh] grid-rows-[1fr_auto] overflow-hidden pt-16 lg:overflow-visible lg:pt-4">
         {/* Shuttle stage — centred, kept clear of text zones */}
         <div
@@ -230,7 +262,7 @@ export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Pr
                   height: "12%",
                   transform: `translateY(-${anim.bindingLift}px) translateZ(${anim.bindingLift}px)`,
                   transformStyle: "preserve-3d",
-                  opacity: anim.openAmount > 0.12 ? 1 : 0,
+                  opacity: closed || anim.openAmount <= 0.12 ? 0 : 1,
                 }}
               >
                 <div className="absolute inset-x-[-10%] top-[-340%] h-[1600%]">
@@ -250,7 +282,7 @@ export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Pr
                 className="absolute inset-x-0 top-0 z-30 overflow-visible"
                 style={{
                   height: "44%",
-                  opacity: anim.openAmount > 0.12 ? 1 : 0,
+                  opacity: closed || anim.openAmount <= 0.12 ? 0 : 1,
                   transform: `
                     translateY(-${anim.featherLift}px)
                     translateZ(${anim.featherLift * 1.2}px)
@@ -278,8 +310,9 @@ export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Pr
               <div
                 className="pointer-events-none absolute inset-0 z-40"
                 style={{
-                  opacity:
-                    anim.openAmount < 0.12
+                  opacity: closed
+                    ? 1
+                    : anim.openAmount < 0.12
                       ? 1
                       : Math.max(0, 1 - (anim.openAmount - 0.12) * 8),
                 }}
@@ -295,7 +328,7 @@ export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Pr
               </div>
 
               {/* Soft focus glow — never a boxed bar across the feathers */}
-              {highlight && highlight !== "intro" && anim.openAmount > 0.12 && (
+              {highlight && highlight !== "intro" && !closed && anim.openAmount > 0.12 && (
                 <div
                   className="pointer-events-none absolute z-50 rounded-[40%] border border-af-cyan/50"
                   style={{
