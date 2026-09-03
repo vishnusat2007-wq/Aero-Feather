@@ -106,14 +106,14 @@ export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Pr
 
           <div
             className={cn(
-              "absolute left-1/2 top-[12%] z-40 flex -translate-x-1/2 flex-col items-center gap-1 transition-opacity duration-300 lg:top-[8%]",
+              "absolute left-1/2 top-1 z-40 flex -translate-x-1/2 flex-col items-center gap-1 transition-opacity duration-300 sm:top-2 lg:top-0",
               progress > 0.05 ? "opacity-0 pointer-events-none" : "opacity-90",
             )}
           >
-            <span className="text-[10px] font-semibold tracking-[0.18em] text-af-cyan uppercase">
+            <span className="rounded-md border border-af-cyan/25 bg-af-bg/80 px-3 py-1.5 text-[10px] font-semibold tracking-[0.18em] text-af-cyan uppercase backdrop-blur-sm">
               Scroll to open each part
             </span>
-            <span className="h-6 w-px animate-af-float bg-af-cyan/60" />
+            <span className="h-5 w-px animate-af-float bg-af-cyan/60" />
           </div>
 
           <div
