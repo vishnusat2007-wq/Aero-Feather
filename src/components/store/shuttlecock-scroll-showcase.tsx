@@ -196,7 +196,14 @@ export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Pr
   const gapVisible = !closed && anim.openAmount > 0.08;
 
   return (
-    <div ref={trackRef} className="relative h-[300svh] lg:h-[440vh]">
+    <div
+      ref={trackRef}
+      className="relative h-[300svh] lg:h-[440vh]"
+      data-shuttle-closed={closed ? "true" : "false"}
+      data-open-amount={anim.openAmount.toFixed(3)}
+      data-feather-lift={anim.featherLift.toFixed(1)}
+      data-binding-lift={anim.bindingLift.toFixed(1)}
+    >
       <div className="sticky top-0 grid h-[100svh] grid-rows-[1fr_auto] overflow-hidden pt-16 lg:overflow-visible lg:pt-4">
         {/* Shuttle stage — centred, kept clear of text zones */}
         <div
