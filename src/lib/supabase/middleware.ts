@@ -6,6 +6,7 @@ const PROTECTED_PREFIXES = ["/account", "/admin"] as const;
 const MAINTENANCE_ALLOW = [
   "/maintenance",
   "/login",
+  "/admin-login",
   "/auth",
   "/api/auth",
   "/api/webhooks",
@@ -38,14 +39,20 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const pathname = request.nextUrl.pathname;
+  const isAdminApp = pathname === "/admin" || pathname.startsWith("/admin/");
   const needsAuth = PROTECTED_PREFIXES.some(
     (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
   );
 
   if (needsAuth && !user) {
     const url = request.nextUrl.clone();
-    url.pathname = "/login";
-    url.searchParams.set("next", pathname);
+    if (isAdminApp) {
+      url.pathname = "/admin-login";
+      url.search = "";
+    } else {
+      url.pathname = "/login";
+      url.searchParams.set("next", pathname);
+    }
     return NextResponse.redirect(url);
   }
 
@@ -59,7 +66,7 @@ export async function updateSession(request: NextRequest) {
     isAdminUser = profile?.role === "admin";
   }
 
-  if (pathname.startsWith("/admin") && user && !isAdminUser) {
+  if (isAdminApp && user && !isAdminUser) {
     const url = request.nextUrl.clone();
     url.pathname = "/account";
     url.searchParams.set("error", "admin_only");
@@ -90,7 +97,7 @@ export async function updateSession(request: NextRequest) {
         return NextResponse.redirect(url);
       }
 
-      if (!allowedDuringMaintenance && !pathname.startsWith("/admin")) {
+      if (!allowedDuringMaintenance && !isAdminApp) {
         const url = request.nextUrl.clone();
         url.pathname = "/maintenance";
         url.search = "";

@@ -9,9 +9,14 @@ import { createClient } from "@/lib/supabase/client";
 type Props = {
   next?: string;
   defaultMode?: "login" | "signup";
+  allowSignup?: boolean;
 };
 
-export function LoginForm({ next = "/account", defaultMode = "login" }: Props) {
+export function LoginForm({
+  next = "/account",
+  defaultMode = "login",
+  allowSignup = true,
+}: Props) {
   const router = useRouter();
   const [mode, setMode] = useState<"login" | "signup">(defaultMode);
   const [email, setEmail] = useState("");
@@ -116,19 +121,21 @@ export function LoginForm({ next = "/account", defaultMode = "login" }: Props) {
       <Button type="submit" variant="primary" className="w-full" disabled={loading}>
         {loading ? "Please wait…" : mode === "login" ? "Sign in" : "Create account"}
       </Button>
-      <button
-        type="button"
-        className="w-full text-sm text-af-muted transition-colors hover:text-af-cyan"
-        onClick={() => {
-          setMode(mode === "login" ? "signup" : "login");
-          setError(null);
-          setMessage(null);
-        }}
-      >
-        {mode === "login"
-          ? "New customer? Create an account"
-          : "Already have an account? Sign in"}
-      </button>
+      {allowSignup && (
+        <button
+          type="button"
+          className="w-full text-sm text-af-muted transition-colors hover:text-af-cyan"
+          onClick={() => {
+            setMode(mode === "login" ? "signup" : "login");
+            setError(null);
+            setMessage(null);
+          }}
+        >
+          {mode === "login"
+            ? "New customer? Create an account"
+            : "Already have an account? Sign in"}
+        </button>
+      )}
     </form>
   );
 }

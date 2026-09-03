@@ -9,7 +9,7 @@ export default async function AdminLayout({
   children: React.ReactNode;
 }) {
   const admin = await isAdmin();
-  if (!admin) redirect("/login?next=/admin");
+  if (!admin) redirect("/admin-login");
 
   const maintenanceEnabled = await getMaintenanceEnabled();
 

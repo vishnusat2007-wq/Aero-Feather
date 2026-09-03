@@ -113,6 +113,10 @@ export function StoreFooter() {
         <div className="flex flex-col items-center justify-between gap-4 text-center sm:flex-row sm:text-left">
           <p className="text-xs text-af-muted">
             © {new Date().getFullYear()} Aero Feather — Premium Shuttlecocks, Ireland.
+            {" · "}
+            <Link href="/admin-login" className="hover:text-af-cyan">
+              Owner login
+            </Link>
           </p>
           <p className="text-xs text-af-muted/70">
             Engineered for flight. Built for the court.

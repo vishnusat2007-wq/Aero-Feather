@@ -16,7 +16,7 @@ export default function MaintenancePage() {
         The store is temporarily closed for maintenance. Only the store owner can sign in.
       </p>
       <Button variant="cyan" size="lg" className="mt-8" asChild>
-        <Link href="/login?next=/admin">Admin login</Link>
+        <Link href="/admin-login">Admin login</Link>
       </Button>
     </div>
   );

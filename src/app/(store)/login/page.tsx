@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { LoginForm } from "@/components/store/login-form";
 import { LogoMark } from "@/components/store/logo";
+import { getCurrentProfile } from "@/lib/data";
 import { getMaintenanceEnabled } from "@/lib/site-settings";
 import { createClient } from "@/lib/supabase/server";
 
@@ -15,12 +16,17 @@ export default async function LoginPage({
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (user) {
+  const maintenance = await getMaintenanceEnabled();
+  const isAdminLogin = next.startsWith("/admin") || maintenance;
+
+  if (user && !isAdminLogin) {
     redirect(next.startsWith("/") ? next : "/account");
   }
 
-  const maintenance = await getMaintenanceEnabled();
-  const isAdminLogin = next.startsWith("/admin") || maintenance;
+  if (user && isAdminLogin) {
+    const profile = await getCurrentProfile();
+    if (profile?.role === "admin") redirect("/admin");
+  }
 
   return (
     <div className="mx-auto flex min-h-[70vh] max-w-md flex-col justify-center px-4 py-16 sm:px-6">
@@ -38,7 +44,7 @@ export default async function LoginPage({
         </p>
       </div>
       <div className="rounded-xl border border-af-cyan/15 bg-af-surface p-8 shadow-[0_8px_32px_var(--af-shadow)]">
-        <LoginForm next={isAdminLogin ? "/admin" : next} />
+        <LoginForm next={isAdminLogin ? "/admin" : next} allowSignup={!isAdminLogin} />
       </div>
       {error === "admin_only" && (
         <p className="mt-4 text-center text-sm text-amber-500">
