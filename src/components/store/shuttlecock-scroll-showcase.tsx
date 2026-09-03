@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "
 import { cn } from "@/lib/utils";
 import {
   CHAPTERS,
+  HIGHLIGHT_ZONES,
   getChapterIndex,
   getHeroStage,
   getScrollAnim,
@@ -33,10 +34,10 @@ type Props = {
 };
 
 const PART_LABEL: Record<string, { text: string; top: string }> = {
-  feathers: { text: "Feathers", top: "18%" },
-  geometry: { text: "Geometry", top: "30%" },
-  binding: { text: "Binding", top: "48%" },
-  cork: { text: "Cork", top: "74%" },
+  feathers: { text: "Feathers", top: "16%" },
+  geometry: { text: "Geometry", top: "32%" },
+  binding: { text: "Binding", top: "50%" },
+  cork: { text: "Cork", top: "78%" },
 };
 
 export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Props) {
@@ -67,10 +68,10 @@ export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Pr
       const target = rawRef.current;
       const current = smoothRef.current;
       const delta = target - current;
-      const next = Math.abs(delta) < 0.0004 ? target : current + delta * 0.18;
+      const next = Math.abs(delta) < 0.00035 ? target : current + delta * 0.26;
       smoothRef.current = next;
       setProgress(next);
-      if (Math.abs(target - next) >= 0.0004) raf = requestAnimationFrame(tick);
+      if (Math.abs(target - next) >= 0.00035) raf = requestAnimationFrame(tick);
       else raf = 0;
     };
 
@@ -98,11 +99,12 @@ export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Pr
     };
   }, [readRawProgress]);
 
-  const effectiveProgress = reducedMotion ? 0.18 : progress;
+  const effectiveProgress = reducedMotion ? 0.12 : progress;
   const anim = getScrollAnim(effectiveProgress);
   const chapterIdx = getChapterIndex(effectiveProgress);
   const chapter = CHAPTERS[chapterIdx];
   const label = anim.highlight ? PART_LABEL[anim.highlight] : null;
+  const zone = anim.highlight ? HIGHLIGHT_ZONES[anim.highlight] : null;
 
   useEffect(() => {
     onStageChange?.(getHeroStage(effectiveProgress));
@@ -110,10 +112,13 @@ export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Pr
   }, [effectiveProgress, onStageChange, onChapterChange, chapterIdx]);
 
   return (
-    <div ref={trackRef} className="relative h-[560vh]">
+    <div ref={trackRef} className="relative h-[640vh]">
       <div className="sticky top-0 grid h-[100svh] grid-rows-[1fr_auto] overflow-visible pt-16 lg:pt-4">
-        <div className="relative flex min-h-0 items-center justify-center px-2 pb-2">
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_38%,rgba(255,255,255,0.12)_0%,rgba(32,182,232,0.08)_38%,transparent_72%)]" />
+        <div
+          className="relative flex min-h-0 items-center justify-center overflow-visible px-2 pb-2"
+          style={{ perspective: "1400px" }}
+        >
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_42%,rgba(255,255,255,0.12)_0%,rgba(32,182,232,0.08)_38%,transparent_72%)]" />
 
           <div
             className={cn(
@@ -127,50 +132,75 @@ export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Pr
             <span className="h-5 w-px animate-af-float bg-af-cyan/60" />
           </div>
 
+          {/* Padded stage: image is inset so inspect/close never clips tips or cork */}
+          <div className="relative z-10 flex h-full w-full max-w-[460px] items-center justify-center overflow-visible px-[7%] py-[9%] lg:max-w-[500px]">
             <div
-            className="relative z-10 w-full max-w-[400px] overflow-visible bg-transparent lg:max-w-[420px]"
-            style={{
-              aspectRatio: `${IMG_W} / ${IMG_H}`,
-              maxHeight: "min(68vh, 620px)",
-            }}
-          >
-            <div
-              className="absolute inset-0"
+              className="relative w-full overflow-visible bg-transparent"
               style={{
-                transform: `
-                  translate3d(0, ${anim.imgY}px, 0)
-                  scale(${anim.imgScale})
-                  rotateY(${anim.tiltY}deg)
-                  rotateX(${anim.tiltX}deg)
-                `,
-                transformOrigin: "50% 55%",
-                willChange: "transform",
+                aspectRatio: `${IMG_W} / ${IMG_H}`,
+                maxHeight: "min(56vh, 500px)",
               }}
             >
-              <Image
-                src={SHUTTLE_SRC}
-                alt="Premium goose-feather badminton shuttlecock"
-                width={IMG_W}
-                height={IMG_H}
-                priority
-                draggable={false}
-                className="h-full w-full object-contain"
-                style={{
-                  filter: anim.glow
-                    ? `drop-shadow(0 0 ${10 + anim.glow * 18}px rgba(32,182,232,${0.18 + anim.glow * 0.2}))`
-                    : undefined,
-                }}
-              />
-            </div>
-
-            {label && (
               <div
-                className="pointer-events-none absolute left-1/2 z-20 -translate-x-1/2 rounded-md border border-af-cyan/30 bg-af-bg/80 px-2.5 py-1 text-[9px] font-bold tracking-[0.16em] text-af-cyan uppercase backdrop-blur-sm"
-                style={{ top: label.top, opacity: 0.35 + anim.inspect * 0.65 }}
+                className="absolute inset-0"
+                style={{
+                  transform: `
+                    translate3d(0, ${anim.imgY}px, 0)
+                    scale(${anim.imgScale})
+                    rotateY(${anim.tiltY}deg)
+                    rotateX(${anim.tiltX}deg)
+                  `,
+                  transformOrigin: "50% 78%",
+                  willChange: "transform",
+                }}
               >
-                {label.text}
+                <Image
+                  src={SHUTTLE_SRC}
+                  alt="Premium goose-feather badminton shuttlecock"
+                  width={IMG_W}
+                  height={IMG_H}
+                  priority
+                  draggable={false}
+                  className="h-full w-full object-contain"
+                  style={{
+                    filter: anim.glow
+                      ? `drop-shadow(0 0 ${12 + anim.glow * 22}px rgba(32,182,232,${0.16 + anim.glow * 0.22}))`
+                      : undefined,
+                  }}
+                />
+
+                {zone && (
+                  <div
+                    className="pointer-events-none absolute rounded-full border border-af-cyan/55 shadow-[0_0_18px_rgba(32,182,232,0.28)]"
+                    style={{
+                      top: `${zone.top}%`,
+                      left: `${zone.left}%`,
+                      width: `${zone.width}%`,
+                      height: `${zone.height}%`,
+                      opacity: 0.2 + anim.inspect * 0.65,
+                    }}
+                  />
+                )}
               </div>
-            )}
+
+              {label && (
+                <div
+                  className="pointer-events-none absolute left-1/2 z-20 -translate-x-1/2 rounded-md border border-af-cyan/30 bg-af-bg/80 px-2.5 py-1 text-[9px] font-bold tracking-[0.16em] text-af-cyan uppercase backdrop-blur-sm"
+                  style={{ top: label.top, opacity: 0.3 + anim.inspect * 0.7 }}
+                >
+                  {label.text}
+                </div>
+              )}
+
+              {anim.closing && (
+                <div
+                  className="pointer-events-none absolute left-1/2 top-[4%] z-20 -translate-x-1/2 rounded-md border border-af-cyan/25 bg-af-bg/70 px-2.5 py-1 text-[9px] font-bold tracking-[0.16em] text-af-cyan uppercase backdrop-blur-sm"
+                  style={{ opacity: 0.25 + anim.settle * 0.55 + (anim.closing ? 0.2 : 0) }}
+                >
+                  Assembling
+                </div>
+              )}
+            </div>
           </div>
         </div>
 

@@ -1,4 +1,10 @@
-export type ScrollChapter = "intro" | "feathers" | "geometry" | "binding" | "cork";
+export type ScrollChapter =
+  | "intro"
+  | "feathers"
+  | "geometry"
+  | "binding"
+  | "cork"
+  | "assemble";
 
 export type HeroStage = { num: string; label: string };
 
@@ -52,9 +58,50 @@ export const CHAPTERS: ChapterInfo[] = [
     desc: "Natural cork base delivers balanced impact response and dependable shuttle behaviour on every hit.",
     bullets: ["Natural cork hemisphere", "Weighted flight balance", "Consistent impact feel"],
   },
+  {
+    id: "assemble",
+    num: "06",
+    label: "ASSEMBLE",
+    title: "LOCKED AS ONE",
+    desc: "Cork, binding and feathers settle back into a single tournament shuttle — complete from base to tip.",
+    bullets: ["One intact assembled bird", "Balanced from cork to tip", "Ready for the next rally"],
+  },
 ];
 
-const CHAPTER_BOUNDS = [0, 0.08, 0.26, 0.44, 0.60, 0.76, 1] as const;
+/**
+ *  0.00–0.07  assembled intro
+ *  0.07–0.22  feathers
+ *  0.22–0.38  geometry
+ *  0.38–0.52  binding
+ *  0.52–0.66  cork
+ *  0.66–1.00  assemble / close — camera returns to identity
+ */
+const CHAPTER_BOUNDS = [0, 0.07, 0.22, 0.38, 0.52, 0.66, 1] as const;
+
+/** Camera waypoints. Start and end are the same complete shuttle. */
+const CAMERA = [
+  { p: 0.0, y: 0, s: 1, bloom: 0 },
+  { p: 0.07, y: 0, s: 1, bloom: 0 },
+  { p: 0.15, y: 6, s: 1.03, bloom: 1 },
+  { p: 0.3, y: 4, s: 1.028, bloom: 0.92 },
+  { p: 0.45, y: -2, s: 1.022, bloom: 0.78 },
+  { p: 0.58, y: -6, s: 1.02, bloom: 0.7 },
+  { p: 0.66, y: -3, s: 1.014, bloom: 0.35 },
+  { p: 0.78, y: 0, s: 1.02, bloom: 0.08 },
+  { p: 0.88, y: 0, s: 1.028, bloom: 0 },
+  { p: 0.96, y: 0, s: 1.006, bloom: 0 },
+  { p: 1.0, y: 0, s: 1, bloom: 0 },
+] as const;
+
+export const HIGHLIGHT_ZONES: Record<
+  Exclude<ScrollChapter, "intro" | "assemble">,
+  { top: number; left: number; width: number; height: number }
+> = {
+  feathers: { top: 6, left: 10, width: 80, height: 36 },
+  geometry: { top: 28, left: 16, width: 68, height: 22 },
+  binding: { top: 48, left: 24, width: 52, height: 14 },
+  cork: { top: 74, left: 30, width: 40, height: 24 },
+};
 
 function clamp01(v: number) {
   return Math.max(0, Math.min(1, v));
@@ -78,19 +125,37 @@ function pulse(p: number, a: number, b: number, c: number, d: number) {
   return ramp(p, a, b) * (1 - ramp(p, c, d));
 }
 
+function sampleCamera(p: number) {
+  const x = clamp01(p);
+  if (x <= CAMERA[0].p) return CAMERA[0];
+  const last = CAMERA[CAMERA.length - 1];
+  if (x >= last.p) return last;
+  for (let i = 1; i < CAMERA.length; i++) {
+    const prev = CAMERA[i - 1];
+    const next = CAMERA[i];
+    if (x <= next.p) {
+      const t = smootherstep((x - prev.p) / (next.p - prev.p));
+      return {
+        p: x,
+        y: lerp(prev.y, next.y, t),
+        s: lerp(prev.s, next.s, t),
+        bloom: lerp(prev.bloom, next.bloom, t),
+      };
+    }
+  }
+  return last;
+}
+
 export function getChapterIndex(progress: number): number {
   const p = clamp01(progress);
-  if (p < CHAPTER_BOUNDS[1]) return 0;
-  if (p < CHAPTER_BOUNDS[2]) return 1;
-  if (p < CHAPTER_BOUNDS[3]) return 2;
-  if (p < CHAPTER_BOUNDS[4]) return 3;
-  if (p < CHAPTER_BOUNDS[5]) return 4;
+  for (let i = CHAPTER_BOUNDS.length - 2; i >= 0; i--) {
+    if (p >= CHAPTER_BOUNDS[i]) return i;
+  }
   return 0;
 }
 
 export function getChapterProgress(progress: number): number {
   const p = clamp01(progress);
-  if (p >= CHAPTER_BOUNDS[5]) return ramp(p, CHAPTER_BOUNDS[5], 1);
   const idx = getChapterIndex(p);
   const start = CHAPTER_BOUNDS[idx];
   const end = CHAPTER_BOUNDS[idx + 1] ?? 1;
@@ -106,12 +171,14 @@ export function getHeroStage(progress: number): HeroStage {
 export type ScrollViewAnim = {
   imgY: number;
   imgScale: number;
+  bloom: number;
   tiltY: number;
   tiltX: number;
   glow: number;
   inspect: number;
+  settle: number;
   closing: boolean;
-  highlight: ScrollChapter | null;
+  highlight: Exclude<ScrollChapter, "intro" | "assemble"> | null;
   chapter: number;
   local: number;
   featherLift: number;
@@ -122,44 +189,51 @@ export type ScrollViewAnim = {
   assembledOpacity: number;
 };
 
-/** One intact shuttle: inspect each part, then ease back to the complete bird. */
+/** One intact shuttle. Inspect is a padded Ken Burns; close eases back to identity. */
 export function getScrollAnim(progress: number): ScrollViewAnim {
   const p = clamp01(progress);
   const chapter = getChapterIndex(p);
   const local = getChapterProgress(p);
+  const cam = sampleCamera(p);
 
-  const feathers = pulse(p, 0.07, 0.16, 0.22, 0.30);
-  const geometry = pulse(p, 0.26, 0.34, 0.40, 0.48);
-  const binding = pulse(p, 0.44, 0.52, 0.56, 0.64);
-  const cork = pulse(p, 0.60, 0.68, 0.72, 0.86);
-  const inspect = Math.max(feathers, geometry, binding, cork);
-  const closing = p >= 0.76;
+  const inspect = pulse(p, 0.07, 0.16, 0.58, 0.78);
+  const closing = p >= CHAPTER_BOUNDS[5];
+  const settle = pulse(p, 0.78, 0.86, 0.9, 0.98);
 
-  const imgY = feathers * 16 + geometry * 8 + binding * -4 + cork * -18;
-  const imgScale = 1 + inspect * 0.06;
-  const tiltY = lerp(-0.6, 2.4, inspect);
-  const tiltX = -0.5 + Math.sin(p * Math.PI) * 0.9;
-  const glow = inspect;
+  const tiltY = lerp(-0.4, 2.1, cam.bloom);
+  const tiltX = -0.35 + Math.sin(p * Math.PI) * 0.7;
+  const glow = Math.max(cam.bloom, settle * 0.85);
 
-  const highlight: ScrollChapter | null =
-    closing || chapter === 0 ? null : CHAPTERS[chapter].id;
+  const part =
+    chapter === 0 || chapter === 5 ? null : (CHAPTERS[chapter].id as Exclude<ScrollChapter, "intro" | "assemble">);
 
   return {
-    imgY,
-    imgScale,
+    imgY: cam.y,
+    imgScale: cam.s,
+    bloom: cam.bloom,
     tiltY,
     tiltX,
     glow,
     inspect,
+    settle,
     closing,
-    highlight,
+    highlight: part,
     chapter,
     local,
-    featherLift: feathers * 24,
-    featherSpread: feathers * 0.04,
-    bindingLift: binding * 16,
-    corkGlow: cork,
-    openAmount: inspect,
+    featherLift: 0,
+    featherSpread: cam.bloom * 0.03,
+    bindingLift: 0,
+    corkGlow: pulse(p, 0.5, 0.56, 0.62, 0.74),
+    openAmount: cam.bloom,
     assembledOpacity: 1,
+  };
+}
+
+export function getCloseIntegrity(progress: number) {
+  const anim = getScrollAnim(progress);
+  return {
+    intact: anim.assembledOpacity === 1 && anim.featherLift === 0 && anim.bindingLift === 0,
+    atRest: Math.abs(anim.imgY) < 0.05 && Math.abs(anim.imgScale - 1) < 0.008,
+    closing: anim.closing,
   };
 }
