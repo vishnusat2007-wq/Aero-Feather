@@ -4,7 +4,7 @@ import { ChangePasswordForm } from "@/components/store/change-password-form";
 import { updateProfileAction } from "@/lib/auth/actions";
 import { formatDate, formatPrice } from "@/lib/format";
 import { getCurrentProfile, getUserOrders } from "@/lib/data";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input, Label } from "@/components/ui/input";
@@ -15,6 +15,8 @@ export default async function AccountPage({
   searchParams: Promise<{ error?: string }>;
 }) {
   const { error } = await searchParams;
+  if (!isSupabaseConfigured()) redirect("/login?next=/account");
+
   const supabase = await createClient();
   const {
     data: { user },

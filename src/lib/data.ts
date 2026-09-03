@@ -1,4 +1,8 @@
-import { createClient, createServiceClient } from "@/lib/supabase/server";
+import {
+  createClient,
+  createServiceClient,
+  isSupabaseConfigured,
+} from "@/lib/supabase/server";
 import type { Order, OrderItem, Product, Profile } from "@/lib/types";
 
 const PRODUCTS = "af_products";
@@ -7,6 +11,7 @@ const ORDER_ITEMS = "af_order_items";
 const PROFILES = "af_profiles";
 
 export async function getActiveProducts(): Promise<Product[]> {
+  if (!isSupabaseConfigured()) return [];
   const supabase = await createClient();
   const { data, error } = await supabase
     .from(PRODUCTS)
@@ -20,9 +25,7 @@ export async function getActiveProducts(): Promise<Product[]> {
 }
 
 export async function getFeaturedProducts(limit = 4): Promise<Product[]> {
-  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-    return [];
-  }
+  if (!isSupabaseConfigured()) return [];
   const supabase = await createClient();
   const { data, error } = await supabase
     .from(PRODUCTS)
@@ -36,6 +39,7 @@ export async function getFeaturedProducts(limit = 4): Promise<Product[]> {
 }
 
 export async function getProductBySlug(slug: string): Promise<Product | null> {
+  if (!isSupabaseConfigured()) return null;
   const supabase = await createClient();
   const { data, error } = await supabase
     .from(PRODUCTS)
@@ -72,6 +76,7 @@ export async function getProductById(id: string): Promise<Product | null> {
 }
 
 export async function getCurrentProfile(): Promise<Profile | null> {
+  if (!isSupabaseConfigured()) return null;
   const supabase = await createClient();
   const {
     data: { user },

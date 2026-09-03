@@ -34,8 +34,12 @@ export function StoreHeader() {
 
   useEffect(() => {
     const supabase = createClient();
-    supabase.auth.getUser().then(({ data }) => {
-      setLoggedIn(Boolean(data.user));
+    // When Supabase isn't configured the client is null — resolve as signed-out.
+    const resolveUser = supabase
+      ? supabase.auth.getUser().then(({ data }) => data.user)
+      : Promise.resolve(null);
+    resolveUser.then((user) => {
+      setLoggedIn(Boolean(user));
       setAuthReady(true);
     });
   }, []);
