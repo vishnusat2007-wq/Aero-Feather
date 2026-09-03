@@ -13,15 +13,26 @@ export async function updateProfileAction(formData: FormData) {
   if (!user) throw new Error("Not signed in");
 
   const fullName = formData.get("full_name")?.toString().trim() ?? "";
-  const phone = formData.get("phone")?.toString().trim() ?? "";
+  const phoneRaw = formData.get("phone");
+  const hasPhoneField = phoneRaw !== null;
+
+  const updates: {
+    full_name: string | null;
+    updated_at: string;
+    phone?: string | null;
+  } = {
+    full_name: fullName || null,
+    updated_at: new Date().toISOString(),
+  };
+
+  if (hasPhoneField) {
+    const phone = phoneRaw.toString().trim();
+    updates.phone = phone || null;
+  }
 
   const { error } = await supabase
     .from("af_profiles")
-    .update({
-      full_name: fullName || null,
-      phone: phone || null,
-      updated_at: new Date().toISOString(),
-    })
+    .update(updates)
     .eq("id", user.id);
 
   if (error) throw error;
@@ -31,6 +42,7 @@ export async function updateProfileAction(formData: FormData) {
   });
 
   revalidatePath("/account");
+  revalidatePath("/admin/profile");
 }
 
 export async function updatePasswordAction(formData: FormData) {

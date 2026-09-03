@@ -1,7 +1,9 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { LoginForm } from "@/components/store/login-form";
 import { LogoMark } from "@/components/store/logo";
 import { getMaintenanceEnabled } from "@/lib/site-settings";
+import { createClient } from "@/lib/supabase/server";
 
 export default async function LoginPage({
   searchParams,
@@ -9,6 +11,14 @@ export default async function LoginPage({
   searchParams: Promise<{ next?: string; error?: string }>;
 }) {
   const { next = "/account", error } = await searchParams;
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (user) {
+    redirect(next.startsWith("/") ? next : "/account");
+  }
+
   const maintenance = await getMaintenanceEnabled();
   const isAdminLogin = next.startsWith("/admin") || maintenance;
 

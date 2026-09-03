@@ -8,7 +8,7 @@ type LogoMarkProps = {
   priority?: boolean;
 };
 
-/** Official Aero Feather circular logo (full mark with wordmark) */
+/** Official Aero Feather circular logo — forced perfect circle in light & dark */
 export function LogoMark({
   className,
   size = 40,
@@ -18,11 +18,18 @@ export function LogoMark({
   return (
     <span
       className={cn(
-        "relative inline-flex shrink-0 overflow-hidden rounded-full",
-        glow && "shadow-[0_0_20px_rgba(32,182,232,0.2)]",
+        "relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-white",
+        "ring-1 ring-black/5 dark:ring-white/10",
+        glow && "shadow-[0_0_20px_rgba(32,182,232,0.25)]",
         className,
       )}
-      style={{ width: size, height: size }}
+      style={{
+        width: size,
+        height: size,
+        borderRadius: "50%",
+        clipPath: "circle(50% at 50% 50%)",
+        WebkitClipPath: "circle(50% at 50% 50%)",
+      }}
     >
       <Image
         src="/logo-circle.png"
@@ -30,7 +37,8 @@ export function LogoMark({
         width={size}
         height={size}
         priority={priority}
-        className="h-full w-full object-cover"
+        className="h-full w-full rounded-full object-cover"
+        style={{ borderRadius: "50%" }}
       />
     </span>
   );

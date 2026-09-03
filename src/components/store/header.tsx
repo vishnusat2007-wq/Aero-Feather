@@ -22,7 +22,8 @@ export function StoreHeader() {
   const totalItems = useCartStore((s) => s.totalItems());
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [accountHref, setAccountHref] = useState("/login");
+  const [loggedIn, setLoggedIn] = useState(false);
+  const [authReady, setAuthReady] = useState(false);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24);
@@ -34,13 +35,16 @@ export function StoreHeader() {
   useEffect(() => {
     const supabase = createClient();
     supabase.auth.getUser().then(({ data }) => {
-      setAccountHref(data.user ? "/account" : "/login");
+      setLoggedIn(Boolean(data.user));
+      setAuthReady(true);
     });
   }, []);
 
   useEffect(() => {
     document.body.style.overflow = mobileOpen ? "hidden" : "";
-    return () => { document.body.style.overflow = ""; };
+    return () => {
+      document.body.style.overflow = "";
+    };
   }, [mobileOpen]);
 
   return (
@@ -55,7 +59,12 @@ export function StoreHeader() {
       >
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:h-[4.5rem]">
           <Link href="/" className="group transition-opacity hover:opacity-90">
-            <LogoMark size={44} glow priority className="transition-transform duration-300 group-hover:scale-[1.03]" />
+            <LogoMark
+              size={44}
+              glow
+              priority
+              className="rounded-full transition-transform duration-300 group-hover:scale-[1.03]"
+            />
           </Link>
 
           <nav className="hidden items-center gap-8 lg:flex">
@@ -68,19 +77,21 @@ export function StoreHeader() {
             <ThemeToggle />
 
             <Link
-              href={accountHref}
-              aria-label="Account"
+              href={loggedIn ? "/account" : "/login"}
+              aria-label={loggedIn ? "Account" : "Sign in"}
               className="flex h-9 w-9 items-center justify-center rounded-lg text-af-muted transition-all hover:bg-af-surface hover:text-af-text"
             >
               <User className="h-[18px] w-[18px]" strokeWidth={1.75} />
             </Link>
 
-            <Link
-              href="/signup"
-              className="hidden text-[13px] font-medium text-af-muted transition-colors hover:text-af-cyan sm:inline"
-            >
-              Sign up
-            </Link>
+            {authReady && !loggedIn && (
+              <Link
+                href="/signup"
+                className="hidden text-[13px] font-medium text-af-muted transition-colors hover:text-af-cyan sm:inline"
+              >
+                Sign up
+              </Link>
+            )}
 
             <Link
               href="/cart"
@@ -148,6 +159,24 @@ export function StoreHeader() {
                 {link.label}
               </Link>
             ))}
+            {authReady && !loggedIn && (
+              <Link
+                href="/signup"
+                onClick={() => setMobileOpen(false)}
+                className="rounded-lg px-4 py-3 text-sm font-medium text-af-muted transition-colors hover:bg-af-surface hover:text-af-cyan"
+              >
+                Sign up
+              </Link>
+            )}
+            {loggedIn && (
+              <Link
+                href="/account"
+                onClick={() => setMobileOpen(false)}
+                className="rounded-lg px-4 py-3 text-sm font-medium text-af-muted transition-colors hover:bg-af-surface hover:text-af-cyan"
+              >
+                My account
+              </Link>
+            )}
           </nav>
         </div>
       </div>

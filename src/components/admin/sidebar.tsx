@@ -8,10 +8,10 @@ import {
   ShoppingBag,
   Store,
   Globe,
-  Wallet,
-  Wrench,
   ChartColumn,
   Boxes,
+  Wrench,
+  UserRound,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { LogoMark } from "@/components/store/logo";
@@ -31,6 +31,10 @@ const website: NavItem[] = [
   { href: "/admin/website", label: "Site content", icon: Globe },
   { href: "/admin/products", label: "Products", icon: Package },
   { href: "/admin/inventory", label: "Inventory", icon: Boxes },
+];
+
+const controls: NavItem[] = [
+  { href: "/admin/profile", label: "Profile", icon: UserRound },
 ];
 
 function NavLink({ href, label, icon: Icon }: NavItem) {
@@ -92,10 +96,6 @@ export function AdminSidebar({ maintenanceEnabled = false }: Props) {
         ))}
 
         <Section title="Finance">
-          <div className="mb-1 flex items-center gap-2 px-3 text-[11px] text-slate-500">
-            <Wallet className="h-3 w-3" />
-            Orders & revenue
-          </div>
           {finance.map((item) => (
             <NavLink key={item.href} {...item} />
           ))}
@@ -108,6 +108,9 @@ export function AdminSidebar({ maintenanceEnabled = false }: Props) {
         </Section>
 
         <Section title="Controls">
+          {controls.map((item) => (
+            <NavLink key={item.href} {...item} />
+          ))}
           <Link
             href="/admin/website#maintenance"
             className={cn(
