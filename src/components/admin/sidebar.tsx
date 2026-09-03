@@ -82,7 +82,7 @@ export function AdminSidebar({ maintenanceEnabled = false }: Props) {
     <aside className="flex w-64 shrink-0 flex-col border-r border-white/10 bg-[#050a14] text-white">
       <div className="border-b border-white/10 px-5 py-5">
         <div className="flex items-center gap-3">
-          <LogoMark size={36} />
+          <LogoMark size={40} />
           <div>
             <p className="text-[10px] uppercase tracking-widest text-af-cyan">Admin</p>
             <p className="text-sm font-bold">Aero Feather</p>

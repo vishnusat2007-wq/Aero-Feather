@@ -18,17 +18,19 @@ export function LogoMark({
   return (
     <span
       className={cn(
-        "relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-white",
-        "ring-1 ring-black/5 dark:ring-white/10",
+        "relative inline-block shrink-0 overflow-hidden rounded-full bg-white",
+        "aspect-square ring-1 ring-black/5 dark:ring-white/15",
         glow && "shadow-[0_0_20px_rgba(32,182,232,0.25)]",
         className,
       )}
       style={{
         width: size,
         height: size,
+        minWidth: size,
+        minHeight: size,
         borderRadius: "50%",
-        clipPath: "circle(50% at 50% 50%)",
-        WebkitClipPath: "circle(50% at 50% 50%)",
+        clipPath: "circle(50%)",
+        WebkitClipPath: "circle(50%)",
       }}
     >
       <Image
@@ -37,7 +39,7 @@ export function LogoMark({
         width={size}
         height={size}
         priority={priority}
-        className="h-full w-full rounded-full object-cover"
+        className="absolute inset-0 h-full w-full rounded-full object-cover"
         style={{ borderRadius: "50%" }}
       />
     </span>

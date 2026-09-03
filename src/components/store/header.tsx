@@ -58,12 +58,15 @@ export function StoreHeader() {
         )}
       >
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:h-[4.5rem]">
-          <Link href="/" className="group transition-opacity hover:opacity-90">
+          <Link
+            href="/"
+            className="group inline-flex h-11 w-11 shrink-0 items-center justify-center leading-none transition-opacity hover:opacity-90"
+          >
             <LogoMark
               size={44}
               glow
               priority
-              className="rounded-full transition-transform duration-300 group-hover:scale-[1.03]"
+              className="transition-transform duration-300 group-hover:scale-[1.03]"
             />
           </Link>
 
