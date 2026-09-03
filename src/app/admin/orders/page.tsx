@@ -15,7 +15,7 @@ export default async function AdminOrdersPage() {
       <h1 className="mt-1 text-3xl font-bold text-white">Orders</h1>
       <p className="mt-1 text-slate-400">{orders.length} total orders</p>
 
-      <div className="mt-8 overflow-hidden rounded-2xl border border-white/10 bg-[#0d1a34]">
+      <div className="mt-8 overflow-x-auto rounded-2xl border border-white/10 bg-[#0d1a34]">
         <table className="w-full text-sm">
           <thead className="bg-white/5 text-left text-slate-400">
             <tr>

@@ -76,7 +76,7 @@ export default async function AdminDashboardPage() {
         {recentOrders.length === 0 ? (
           <p className="mt-4 text-slate-500">No orders yet.</p>
         ) : (
-          <div className="mt-4 overflow-hidden rounded-2xl border border-white/10 bg-[#0d1a34]">
+          <div className="mt-4 overflow-x-auto rounded-2xl border border-white/10 bg-[#0d1a34]">
             <table className="w-full text-sm">
               <thead className="bg-white/5 text-left text-slate-400">
                 <tr>

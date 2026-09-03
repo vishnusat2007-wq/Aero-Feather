@@ -37,7 +37,12 @@ const controls: NavItem[] = [
   { href: "/admin/profile", label: "Profile", icon: UserRound },
 ];
 
-function NavLink({ href, label, icon: Icon }: NavItem) {
+function NavLink({
+  href,
+  label,
+  icon: Icon,
+  onNavigate,
+}: NavItem & { onNavigate?: () => void }) {
   const pathname = usePathname();
   const active =
     href === "/admin"
@@ -49,6 +54,7 @@ function NavLink({ href, label, icon: Icon }: NavItem) {
   return (
     <Link
       href={href}
+      onClick={onNavigate}
       className={cn(
         "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition",
         active
@@ -75,44 +81,59 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 type Props = {
   maintenanceEnabled?: boolean;
+  onNavigate?: () => void;
+  closeButton?: React.ReactNode;
+  className?: string;
 };
 
-export function AdminSidebar({ maintenanceEnabled = false }: Props) {
+export function AdminSidebar({
+  maintenanceEnabled = false,
+  onNavigate,
+  closeButton,
+  className,
+}: Props) {
   return (
-    <aside className="flex w-64 shrink-0 flex-col border-r border-white/10 bg-[#050a14] text-white">
+    <aside
+      className={cn(
+        "flex w-64 shrink-0 flex-col border-r border-white/10 bg-[#050a14] text-white",
+        className,
+      )}
+    >
       <div className="border-b border-white/10 px-5 py-5">
         <div className="flex items-center gap-3">
           <LogoMark size={40} />
-          <div>
+          <div className="min-w-0 flex-1">
             <p className="text-[10px] uppercase tracking-widest text-af-cyan">Admin</p>
             <p className="text-sm font-bold">Aero Feather</p>
           </div>
+          {closeButton}
         </div>
       </div>
 
       <nav className="flex-1 space-y-1 overflow-y-auto p-3">
         {overview.map((item) => (
-          <NavLink key={item.href} {...item} />
+          <NavLink key={item.href} {...item} onNavigate={onNavigate} />
         ))}
 
         <Section title="Finance">
           {finance.map((item) => (
-            <NavLink key={item.href} {...item} />
+            <NavLink key={item.href} {...item} onNavigate={onNavigate} />
           ))}
         </Section>
 
         <Section title="Website Manager">
           {website.map((item) => (
-            <NavLink key={item.href} {...item} />
+            <NavLink key={item.href} {...item} onNavigate={onNavigate} />
           ))}
         </Section>
 
         <Section title="Controls">
           {controls.map((item) => (
-            <NavLink key={item.href} {...item} />
+            <NavLink key={item.href} {...item} onNavigate={onNavigate} />
           ))}
           <Link
             href="/admin/website#maintenance"
+            onClick={onNavigate}
             className={cn(
               "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition",
               maintenanceEnabled
@@ -132,6 +153,7 @@ export function AdminSidebar({ maintenanceEnabled = false }: Props) {
       <div className="border-t border-white/10 p-3">
         <Link
           href="/"
+          onClick={onNavigate}
           className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-400 transition hover:bg-white/8 hover:text-white"
         >
           <Store className="h-4 w-4" />

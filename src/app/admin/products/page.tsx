@@ -11,7 +11,7 @@ export default async function AdminProductsPage() {
 
   return (
     <div>
-      <div className="mb-8 flex items-center justify-between">
+      <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
         <div>
           <p className="text-[11px] font-semibold tracking-[0.2em] text-af-cyan uppercase">
             Website Manager
@@ -27,7 +27,7 @@ export default async function AdminProductsPage() {
         </Button>
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-white/10 bg-[#0d1a34]">
+      <div className="overflow-x-auto rounded-2xl border border-white/10 bg-[#0d1a34]">
         <table className="w-full text-sm">
           <thead className="bg-white/5 text-left text-slate-400">
             <tr>
