@@ -31,6 +31,14 @@ export function LoginForm({
     setMessage(null);
     const supabase = createClient();
 
+    if (!supabase) {
+      setError(
+        "Sign-in isn’t available yet — the store owner still needs to finish setup.",
+      );
+      setLoading(false);
+      return;
+    }
+
     if (mode === "signup") {
       const { data, error: signUpError } = await supabase.auth.signUp({
         email,

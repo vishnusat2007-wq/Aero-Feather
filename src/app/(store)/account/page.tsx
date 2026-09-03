@@ -4,7 +4,7 @@ import { ChangePasswordForm } from "@/components/store/change-password-form";
 import { updateProfileAction } from "@/lib/auth/actions";
 import { formatDate, formatPrice } from "@/lib/format";
 import { getCurrentProfile, getUserOrders } from "@/lib/data";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input, Label } from "@/components/ui/input";
@@ -15,6 +15,8 @@ export default async function AccountPage({
   searchParams: Promise<{ error?: string }>;
 }) {
   const { error } = await searchParams;
+  if (!isSupabaseConfigured()) redirect("/login?next=/account");
+
   const supabase = await createClient();
   const {
     data: { user },
@@ -23,8 +25,10 @@ export default async function AccountPage({
   if (!user) redirect("/login?next=/account");
 
   const profile = await getCurrentProfile();
+  // Admins skip the account/profile page and land directly on the dashboard.
+  if (profile?.role === "admin") redirect("/admin");
+
   const orders = await getUserOrders(user.id);
-  const isAdminUser = profile?.role === "admin";
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 lg:py-16">
@@ -50,51 +54,32 @@ export default async function AccountPage({
         </div>
       )}
 
-      {isAdminUser && (
-        <div className="mb-8 border border-af-cyan/20 bg-af-cyan/5 p-5">
-          <p className="text-sm text-af-text">
-            You have admin access.{" "}
-            <Link href="/admin" className="font-semibold text-af-cyan hover:underline">
-              Open admin dashboard →
-            </Link>
-            {" · "}
-            <Link href="/admin/profile" className="font-semibold text-af-cyan hover:underline">
-              Profile settings
-            </Link>
-          </p>
-        </div>
-      )}
-
       {/* Customers keep a simple name edit; phone lives in admin profile settings */}
-      {!isAdminUser && (
-        <section className="mb-12 border border-af-cyan/10 bg-af-surface p-6">
-          <h2 className="mb-4 text-lg font-bold text-af-text">Profile</h2>
-          <form action={updateProfileAction} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="full_name">Full name</Label>
-              <Input
-                id="full_name"
-                name="full_name"
-                defaultValue={profile?.full_name ?? ""}
-                placeholder="Your name"
-              />
-            </div>
-            <Button type="submit" variant="primary" size="sm">
-              Save profile
-            </Button>
-          </form>
-        </section>
-      )}
+      <section className="mb-12 border border-af-cyan/10 bg-af-surface p-6">
+        <h2 className="mb-4 text-lg font-bold text-af-text">Profile</h2>
+        <form action={updateProfileAction} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="full_name">Full name</Label>
+            <Input
+              id="full_name"
+              name="full_name"
+              defaultValue={profile?.full_name ?? ""}
+              placeholder="Your name"
+            />
+          </div>
+          <Button type="submit" variant="primary" size="sm">
+            Save profile
+          </Button>
+        </form>
+      </section>
 
-      {!isAdminUser && (
-        <section className="mb-12 border border-af-cyan/10 bg-af-surface p-6">
-          <h2 className="mb-4 text-lg font-bold text-af-text">Password</h2>
-          <p className="mb-4 text-sm text-af-muted">
-            Change your sign-in password. Use at least 6 characters.
-          </p>
-          <ChangePasswordForm />
-        </section>
-      )}
+      <section className="mb-12 border border-af-cyan/10 bg-af-surface p-6">
+        <h2 className="mb-4 text-lg font-bold text-af-text">Password</h2>
+        <p className="mb-4 text-sm text-af-muted">
+          Change your sign-in password. Use at least 6 characters.
+        </p>
+        <ChangePasswordForm />
+      </section>
 
       <h2 className="mb-5 text-xl font-bold text-af-text">Order history</h2>
       {orders.length === 0 ? (

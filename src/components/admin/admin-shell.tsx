@@ -72,7 +72,7 @@ export function AdminShell({ children, maintenanceEnabled = false }: Props) {
   }, []);
 
   return (
-    <div className="flex min-h-screen bg-[#060b18] text-slate-100">
+    <div className="af-admin flex min-h-screen bg-[#060b18] text-slate-100">
       <div className="hidden md:flex md:min-h-screen">
         <AdminSidebar maintenanceEnabled={maintenanceEnabled} />
       </div>

@@ -67,6 +67,27 @@ html.light {
   color-scheme: light;
 }
 
+/* The admin panel always uses the dark surface. Pin the semantic tokens here
+   so theme-dependent components (buttons, badges) stay legible even when the
+   storefront theme toggle is set to light. */
+.af-admin {
+  --af-bg: #060b18;
+  --af-bg-secondary: #081326;
+  --af-surface: #0d1a34;
+  --af-surface-elevated: #142449;
+  --af-cyan: #20b6e8;
+  --af-blue: #168cd8;
+  --af-text: #f4f7fb;
+  --af-muted: #8b9cb8;
+  --af-border: rgba(32, 182, 232, 0.12);
+  --af-border-accent: rgba(32, 182, 232, 0.25);
+  --af-shadow: rgba(0, 0, 0, 0.35);
+  --af-shadow-strong: rgba(0, 0, 0, 0.5);
+  --af-glow: rgba(32, 182, 232, 0.2);
+  --af-btn-primary-text: #060b18;
+  color-scheme: dark;
+}
+
 @theme inline {
   --color-af-bg: var(--af-bg);
   --color-af-bg-secondary: var(--af-bg-secondary);
