@@ -57,8 +57,17 @@ export const CHAPTERS: ChapterInfo[] = [
 /** Chapter windows across the full 0→1 scroll track (cork runs through the end). */
 const CHAPTER_BOUNDS = [0, 0.08, 0.26, 0.44, 0.62, 1] as const;
 
-/** First-segment hold: reverse playback snaps to the assembled start pose here. */
-export const CLOSED_PROGRESS = 0.02;
+/** Intro hold — forward opening has not started. */
+export const CLOSED_PROGRESS = CHAPTER_BOUNDS[1];
+
+/**
+ * Reverse close finishes over this fraction of the track so phones do not have
+ * to rewind every opening chapter. Forward choreography is unchanged.
+ */
+export const REVERSE_CLOSE_SPAN_MOBILE = 0.32;
+export const REVERSE_CLOSE_SPAN_DESKTOP = 0.42;
+
+export type ScrollDirection = "forward" | "reverse";
 
 function clamp01(v: number) {
   return Math.max(0, Math.min(1, v));
@@ -141,14 +150,18 @@ export function isFullyClosed(progress: number): boolean {
   return clamp01(progress) < CHAPTER_BOUNDS[1];
 }
 
+/** True when the pose matches the first-segment assembled shuttle. */
+export function isAssembledPose(anim: ScrollViewAnim): boolean {
+  return anim.openAmount <= 0.001 && anim.featherLift <= 0.35 && anim.bindingLift <= 0.35;
+}
+
 /** Assembled start pose — reverse playback must land here, not a mid-explode. */
-function closedAnim(progress: number, local: number): ScrollViewAnim {
-  const p = clamp01(progress);
+function closedAnim(): ScrollViewAnim {
   return {
     focusY: 0,
     focusScale: 1,
-    tiltY: lerp(-2, 3, p),
-    tiltX: -1 + Math.sin(p * Math.PI) * 1.5,
+    tiltY: -2,
+    tiltX: -1,
     featherLift: 0,
     featherSpread: 0,
     bindingLift: 0,
@@ -156,12 +169,53 @@ function closedAnim(progress: number, local: number): ScrollViewAnim {
     openAmount: 0,
     highlight: null,
     chapter: 0,
-    local: easeOutCubic(clamp01(local)),
+    local: 0,
   };
 }
 
+/** 0 at the reverse turnaround, 1 once the assembled pose must be on screen. */
+export function getReverseCloseAmount(
+  progress: number,
+  peak: number,
+  closeSpan: number = REVERSE_CLOSE_SPAN_DESKTOP,
+): number {
+  const p = clamp01(progress);
+  const crest = clamp01(peak);
+  if (p <= 0 || crest <= 0) return 1;
+  if (p >= crest) return 0;
+  const span = Math.max(CHAPTER_BOUNDS[1], Math.min(crest, closeSpan));
+  return clamp01((crest - p) / span);
+}
+
+function blendToClosed(from: ScrollViewAnim, amount: number): ScrollViewAnim {
+  const t = easeInOutCubic(clamp01(amount));
+  if (t >= 1) return closedAnim();
+  if (t <= 0) return from;
+  const keepHighlight = t < 0.82 && from.highlight && from.highlight !== "intro";
+  return {
+    focusY: lerp(from.focusY, 0, t),
+    focusScale: lerp(from.focusScale, 1, t),
+    tiltY: lerp(from.tiltY, -2, t),
+    tiltX: lerp(from.tiltX, -1, t),
+    featherLift: lerp(from.featherLift, 0, t),
+    featherSpread: lerp(from.featherSpread, 0, t),
+    bindingLift: lerp(from.bindingLift, 0, t),
+    corkGlow: lerp(from.corkGlow, 0, t),
+    openAmount: lerp(from.openAmount, 0, t),
+    highlight: keepHighlight ? from.highlight : null,
+    chapter: t >= 0.82 ? 0 : from.chapter,
+    local: lerp(from.local, 0, t),
+  };
+}
+
+export type ScrollPlayback = {
+  direction?: ScrollDirection;
+  peak?: number;
+  closeSpan?: number;
+};
+
 /** Lift values in px — tuned for ~400px-wide stage */
-export function getScrollAnim(progress: number): ScrollViewAnim {
+export function getForwardAnim(progress: number): ScrollViewAnim {
   const p = clamp01(progress);
   const chapter = getChapterIndex(p);
   const local = getChapterProgress(p);
@@ -182,13 +236,13 @@ export function getScrollAnim(progress: number): ScrollViewAnim {
 
   switch (chapter) {
     case 0:
-      return closedAnim(p, local);
+      return closedAnim();
     case 1:
-      focusY = lerp(24, 56, eased);
-      focusScale = lerp(0.98, 1.02, eased);
+      focusY = lerp(0, 56, eased);
+      focusScale = lerp(1, 1.02, eased);
       featherLift = lerp(0, 70, eased);
       featherSpread = lerp(0, 0.14, eased);
-      openAmount = lerp(0.05, 0.5, eased);
+      openAmount = lerp(0, 0.5, eased);
       tiltY = lerp(-2, 3, eased);
       break;
     case 2:
@@ -235,4 +289,20 @@ export function getScrollAnim(progress: number): ScrollViewAnim {
     chapter,
     local: easeOutCubic(local),
   };
+}
+
+/**
+ * Forward uses the opening story. Reverse blends the turnaround pose back to
+ * the assembled start — chapter 4 never reaches closed on its own.
+ */
+export function getScrollAnim(progress: number, playback: ScrollPlayback = {}): ScrollViewAnim {
+  const p = clamp01(progress);
+  if (playback.direction === "reverse") {
+    const peak = clamp01(playback.peak ?? p);
+    const closeAmount = getReverseCloseAmount(p, peak, playback.closeSpan);
+    if (closeAmount >= 1 || isFullyClosed(p)) return closedAnim();
+    return blendToClosed(getForwardAnim(peak), closeAmount);
+  }
+  if (isFullyClosed(p)) return closedAnim();
+  return getForwardAnim(p);
 }
