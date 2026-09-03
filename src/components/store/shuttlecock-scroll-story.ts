@@ -54,8 +54,16 @@ export const CHAPTERS: ChapterInfo[] = [
   },
 ];
 
-/** Chapter windows across the full 0→1 scroll track (cork runs through the end). */
-const CHAPTER_BOUNDS = [0, 0.08, 0.26, 0.44, 0.62, 1] as const;
+/**
+ * Scroll story:
+ *  0.00–0.08  assembled intro
+ *  0.08–0.28  feathers lift
+ *  0.28–0.46  geometry
+ *  0.46–0.62  binding
+ *  0.62–0.74  cork (held open)
+ *  0.74–1.00  close — every part returns to a complete shuttle
+ */
+const CHAPTER_BOUNDS = [0, 0.08, 0.28, 0.46, 0.62, 0.78, 1] as const;
 
 function clamp01(v: number) {
   return Math.max(0, Math.min(1, v));
@@ -65,12 +73,20 @@ function lerp(a: number, b: number, t: number) {
   return a + (b - a) * t;
 }
 
-function easeOutCubic(t: number) {
-  return 1 - Math.pow(1 - t, 3);
+function smootherstep(t: number) {
+  const x = clamp01(t);
+  return x * x * x * (x * (x * 6 - 15) + 10);
 }
 
-function easeInOutCubic(t: number) {
-  return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+/** 0→1 between [a,b], 0 before, 1 after */
+function ramp(p: number, a: number, b: number) {
+  if (b <= a) return p >= b ? 1 : 0;
+  return smootherstep((p - a) / (b - a));
+}
+
+/** Envelope that rises then falls back to 0 (open then close). */
+function openClose(p: number, riseA: number, riseB: number, fallA: number, fallB: number) {
+  return ramp(p, riseA, riseB) * (1 - ramp(p, fallA, fallB));
 }
 
 export function getChapterIndex(progress: number): number {
@@ -79,15 +95,20 @@ export function getChapterIndex(progress: number): number {
   if (p < CHAPTER_BOUNDS[2]) return 1;
   if (p < CHAPTER_BOUNDS[3]) return 2;
   if (p < CHAPTER_BOUNDS[4]) return 3;
-  return 4;
+  if (p < CHAPTER_BOUNDS[5]) return 4;
+  return 0;
 }
 
 export function getChapterProgress(progress: number): number {
-  const idx = getChapterIndex(progress);
+  const p = clamp01(progress);
+  if (p >= CHAPTER_BOUNDS[5]) {
+    return ramp(p, CHAPTER_BOUNDS[5], 1);
+  }
+  const idx = getChapterIndex(p);
   const start = CHAPTER_BOUNDS[idx];
   const end = CHAPTER_BOUNDS[idx + 1] ?? 1;
   if (end === start) return 1;
-  return clamp01((progress - start) / (end - start));
+  return clamp01((p - start) / (end - start));
 }
 
 export function getHeroStage(progress: number): HeroStage {
@@ -129,72 +150,44 @@ export type ScrollViewAnim = {
   bindingLift: number;
   corkGlow: number;
   openAmount: number;
+  assembledOpacity: number;
+  closing: boolean;
   highlight: ScrollChapter | null;
   chapter: number;
   local: number;
 };
 
-/** Lift values in px — tuned for ~400px-wide stage */
+/** Continuous open → inspect → close. Start and end are a complete shuttle. */
 export function getScrollAnim(progress: number): ScrollViewAnim {
   const p = clamp01(progress);
   const chapter = getChapterIndex(p);
   const local = getChapterProgress(p);
-  const eased = easeInOutCubic(clamp01(local));
 
-  const highlight: ScrollChapter | null = chapter === 0 ? null : CHAPTERS[chapter].id;
+  const openAmount = openClose(p, 0.06, 0.34, 0.72, 0.97);
+  const closing = p >= 0.72;
 
-  let focusY = 0;
-  let focusScale = 1;
-  let tiltY = lerp(-2, 3, p);
-  const tiltX = -1 + Math.sin(p * Math.PI) * 1.5;
+  const featherGate = openClose(p, 0.07, 0.22, 0.73, 0.97);
+  const geometryBoost = openClose(p, 0.26, 0.38, 0.42, 0.58);
+  const featherLift = featherGate * (68 + geometryBoost * 36);
+  const featherSpread = featherGate * (0.09 + geometryBoost * 0.1);
 
-  let featherLift = 0;
-  let featherSpread = 0;
-  let bindingLift = 0;
-  let corkGlow = 0;
-  let openAmount = 0;
+  const bindingLift = openClose(p, 0.38, 0.54, 0.74, 0.97) * 72;
+  const corkGlow = openClose(p, 0.58, 0.68, 0.78, 0.94);
 
-  switch (chapter) {
-    case 0:
-      openAmount = eased * 0.05;
-      break;
-    case 1:
-      focusY = lerp(24, 56, eased);
-      focusScale = lerp(0.98, 1.02, eased);
-      featherLift = lerp(0, 70, eased);
-      featherSpread = lerp(0, 0.14, eased);
-      openAmount = lerp(0.05, 0.5, eased);
-      tiltY = lerp(-2, 3, eased);
-      break;
-    case 2:
-      focusY = lerp(56, 64, eased);
-      focusScale = lerp(1.02, 1.04, eased);
-      featherLift = lerp(70, 110, eased);
-      featherSpread = lerp(0.14, 0.22, eased);
-      bindingLift = lerp(0, 35, eased);
-      openAmount = lerp(0.5, 0.7, eased);
-      tiltY = 3;
-      break;
-    case 3:
-      focusY = lerp(64, 36, eased);
-      focusScale = lerp(1.04, 1, eased);
-      featherLift = lerp(110, 95, eased);
-      featherSpread = lerp(0.22, 0.18, eased);
-      bindingLift = lerp(35, 90, eased);
-      openAmount = lerp(0.7, 0.9, eased);
-      tiltY = lerp(4, -2, eased);
-      break;
-    case 4:
-      focusY = lerp(8, 20, eased);
-      focusScale = lerp(1.05, 1.08, eased);
-      featherLift = lerp(95, 40, eased);
-      featherSpread = lerp(0.18, 0.06, eased);
-      bindingLift = lerp(90, 30, eased);
-      corkGlow = lerp(0.3, 1, eased);
-      openAmount = lerp(0.9, 0.55, eased);
-      tiltY = lerp(-2, -4, eased);
-      break;
-  }
+  const focusY = openAmount * 26;
+  const focusScale = 1 + openAmount * 0.035;
+  const tiltY = lerp(-1.2, 2.6, openAmount);
+  const tiltX = -0.8 + Math.sin(p * Math.PI) * 1.1;
+
+  // Intact photo: hidden while exploded, covers slices again as they close
+  const closeCover = ramp(p, 0.70, 0.92);
+  const assembledOpacity = Math.max(
+    1 - smootherstep((openAmount - 0.03) / 0.28),
+    closeCover,
+  );
+
+  const highlight: ScrollChapter | null =
+    closing || chapter === 0 ? null : CHAPTERS[chapter].id;
 
   return {
     focusY,
@@ -206,8 +199,10 @@ export function getScrollAnim(progress: number): ScrollViewAnim {
     bindingLift,
     corkGlow,
     openAmount,
+    assembledOpacity,
+    closing,
     highlight,
     chapter,
-    local: easeOutCubic(local),
+    local,
   };
 }

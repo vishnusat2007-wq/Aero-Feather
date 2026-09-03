@@ -34,7 +34,6 @@ type Props = {
   onChapterChange?: (index: number) => void;
 };
 
-/** Full-size shuttle image aligned inside the stage box */
 function ShuttleImage({ className, style }: { className?: string; style?: React.CSSProperties }) {
   return (
     <Image
@@ -52,6 +51,8 @@ function ShuttleImage({ className, style }: { className?: string; style?: React.
 
 export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Props) {
   const trackRef = useRef<HTMLDivElement>(null);
+  const rawRef = useRef(0);
+  const smoothRef = useRef(0);
   const [progress, setProgress] = useState(0);
   const reducedMotion = useSyncExternalStore(
     subscribeReducedMotion,
@@ -59,34 +60,56 @@ export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Pr
     () => false,
   );
 
-  const updateProgress = useCallback(() => {
+  const readRawProgress = useCallback(() => {
     const el = trackRef.current;
-    if (!el) return;
+    if (!el) return 0;
     const rect = el.getBoundingClientRect();
     const scrollable = Math.max(1, el.offsetHeight - window.innerHeight);
-    setProgress(Math.max(0, Math.min(1, -rect.top / scrollable)));
+    return Math.max(0, Math.min(1, -rect.top / scrollable));
   }, []);
 
   useEffect(() => {
     let raf = 0;
+    let running = true;
+
+    const tick = () => {
+      if (!running) return;
+      const target = rawRef.current;
+      const current = smoothRef.current;
+      const delta = target - current;
+      const next = Math.abs(delta) < 0.0006 ? target : current + delta * 0.22;
+      smoothRef.current = next;
+      setProgress(next);
+      if (Math.abs(target - next) >= 0.0006) {
+        raf = requestAnimationFrame(tick);
+      } else {
+        raf = 0;
+      }
+    };
+
+    const queue = () => {
+      rawRef.current = readRawProgress();
+      if (!raf) raf = requestAnimationFrame(tick);
+    };
+
     const onScroll = () => {
       document.documentElement.classList.add("af-hero-scrolling");
-      if (raf) return;
-      raf = requestAnimationFrame(() => {
-        raf = 0;
-        updateProgress();
-      });
+      queue();
     };
-    updateProgress();
+
+    rawRef.current = readRawProgress();
+    smoothRef.current = rawRef.current;
+    setProgress(rawRef.current);
     window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", updateProgress);
+    window.addEventListener("resize", queue);
     return () => {
+      running = false;
       if (raf) cancelAnimationFrame(raf);
       document.documentElement.classList.remove("af-hero-scrolling");
       window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", updateProgress);
+      window.removeEventListener("resize", queue);
     };
-  }, [updateProgress]);
+  }, [readRawProgress]);
 
   const effectiveProgress = reducedMotion ? 0.42 : progress;
   const anim = getScrollAnim(effectiveProgress);
@@ -94,6 +117,8 @@ export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Pr
   const chapterLocal = getChapterProgress(effectiveProgress);
   const chapter = CHAPTERS[chapterIdx];
   const highlight = anim.highlight;
+  const peeled = anim.openAmount > 0.05;
+  const showCallouts = peeled && !anim.closing;
 
   useEffect(() => {
     onStageChange?.(getHeroStage(effectiveProgress));
@@ -101,12 +126,10 @@ export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Pr
   }, [effectiveProgress, onStageChange, onChapterChange, chapterIdx]);
 
   const featherScale = 1 + anim.featherSpread;
-  const gapVisible = anim.openAmount > 0.08;
 
   return (
-    <div ref={trackRef} className="relative h-[500vh]">
+    <div ref={trackRef} className="relative h-[520vh]">
       <div className="sticky top-0 grid h-[100svh] grid-rows-[1fr_auto] overflow-hidden pt-16 lg:overflow-visible lg:pt-4">
-        {/* Shuttle stage — centred, kept clear of text zones */}
         <div
           className="relative flex min-h-0 items-center justify-center px-2 pb-2"
           style={{ perspective: "1400px" }}
@@ -116,7 +139,7 @@ export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Pr
           <div
             className={cn(
               "absolute left-1/2 top-1 z-40 flex -translate-x-1/2 flex-col items-center gap-1 transition-opacity duration-300 sm:top-2 lg:top-0",
-              progress > 0.05 ? "opacity-0 pointer-events-none" : "opacity-90",
+              progress > 0.04 ? "pointer-events-none opacity-0" : "opacity-90",
             )}
           >
             <span className="rounded-md border border-af-cyan/25 bg-af-bg/80 px-3 py-1.5 text-[10px] font-semibold tracking-[0.18em] text-af-cyan uppercase backdrop-blur-sm">
@@ -135,46 +158,42 @@ export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Pr
                 rotateX(${anim.tiltX}deg)
               `,
               transformStyle: "preserve-3d",
+              willChange: "transform",
             }}
           >
             <div
               className="relative mx-auto w-full overflow-visible"
               style={{
                 aspectRatio: `${IMG_W} / ${IMG_H}`,
-                maxHeight:
-                  highlight === "feathers" || highlight === "geometry"
-                    ? "min(58vh, 520px)"
-                    : "min(64vh, 580px)",
+                maxHeight: "min(64vh, 580px)",
               }}
             >
-              {/* Gap labels between layers when open */}
-              {gapVisible && anim.featherLift > 8 && (
+              {showCallouts && anim.featherLift > 10 && (
                 <div
                   className="pointer-events-none absolute left-1/2 z-0 -translate-x-1/2 rounded border border-af-cyan/30 bg-af-bg/80 px-2 py-0.5 text-[8px] font-bold tracking-widest text-af-cyan uppercase backdrop-blur-sm"
                   style={{
                     top: `calc(44% - ${anim.featherLift}px - 14px)`,
-                    opacity: Math.min(1, anim.openAmount * 1.5),
+                    opacity: Math.min(1, anim.openAmount * 1.6),
                   }}
                 >
                   Feathers
                 </div>
               )}
-              {gapVisible && anim.bindingLift > 8 && (
+              {showCallouts && anim.bindingLift > 10 && (
                 <div
                   className="pointer-events-none absolute left-1/2 z-0 -translate-x-1/2 rounded border border-af-cyan/30 bg-af-bg/80 px-2 py-0.5 text-[8px] font-bold tracking-widest text-af-cyan uppercase backdrop-blur-sm"
                   style={{
                     top: `calc(48% - ${anim.bindingLift}px - 14px)`,
-                    opacity: Math.min(1, anim.openAmount * 1.5),
+                    opacity: Math.min(1, anim.openAmount * 1.6),
                   }}
                 >
                   Binding
                 </div>
               )}
 
-              {/* Connector stems in the gaps */}
-              {gapVisible && (
+              {showCallouts && (
                 <svg className="pointer-events-none absolute inset-0 z-[5] h-full w-full overflow-visible" aria-hidden>
-                  {anim.featherLift > 10 && (
+                  {anim.featherLift > 12 && (
                     <line
                       x1="50%"
                       y1={`${44 - anim.featherLift * 0.08}%`}
@@ -183,10 +202,10 @@ export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Pr
                       stroke="#20B6E8"
                       strokeWidth="2"
                       strokeDasharray="4 5"
-                      opacity={0.55}
+                      opacity={0.45}
                     />
                   )}
-                  {anim.bindingLift > 10 && (
+                  {anim.bindingLift > 12 && (
                     <line
                       x1="50%"
                       y1={`${52 - anim.bindingLift * 0.08}%`}
@@ -195,13 +214,13 @@ export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Pr
                       stroke="#20B6E8"
                       strokeWidth="2"
                       strokeDasharray="4 5"
-                      opacity={0.55}
+                      opacity={0.45}
                     />
                   )}
                 </svg>
               )}
 
-              {/* ── CORK (bottom) — stays fixed ── */}
+              {/* Cork stays planted */}
               <div className="absolute inset-x-0 bottom-0 z-10 h-[52%] overflow-hidden">
                 <div className="absolute inset-x-0 bottom-0 h-[192%]">
                   <ShuttleImage
@@ -209,80 +228,63 @@ export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Pr
                     style={{
                       filter:
                         highlight === "cork"
-                          ? `brightness(1.1) drop-shadow(0 0 ${20 + anim.corkGlow * 30}px rgba(32,182,232,0.5))`
+                          ? `brightness(1.1) drop-shadow(0 0 ${16 + anim.corkGlow * 24}px rgba(32,182,232,0.45))`
                           : undefined,
                     }}
                   />
                 </div>
-                {highlight === "cork" && (
-                  <div
-                    className="pointer-events-none absolute inset-0 bg-af-cyan/10"
-                    style={{ opacity: anim.corkGlow * 0.7 }}
-                  />
-                )}
               </div>
 
-              {/* ── BINDING (middle band) — lifts up, no boxed “bar” ── */}
+              {/* Binding band — no box, only translates */}
               <div
-                className="absolute inset-x-[8%] z-20 overflow-hidden"
+                className="absolute inset-x-[6%] z-20 overflow-hidden"
                 style={{
                   top: "40%",
-                  height: "12%",
-                  transform: `translateY(-${anim.bindingLift}px) translateZ(${anim.bindingLift}px)`,
-                  transformStyle: "preserve-3d",
-                  opacity: anim.openAmount > 0.12 ? 1 : 0,
+                  height: "13%",
+                  opacity: peeled ? 1 : 0,
+                  transform: `translate3d(0, -${anim.bindingLift}px, ${anim.bindingLift}px)`,
+                  willChange: "transform",
                 }}
               >
-                <div className="absolute inset-x-[-10%] top-[-340%] h-[1600%]">
+                <div className="absolute inset-x-[-8%] top-[-320%] h-[1500%]">
                   <ShuttleImage
                     style={{
                       filter:
                         highlight === "binding"
-                          ? "brightness(1.12) drop-shadow(0 0 16px rgba(32,182,232,0.45))"
-                          : "brightness(1.05)",
+                          ? "brightness(1.1) drop-shadow(0 0 14px rgba(32,182,232,0.4))"
+                          : undefined,
                     }}
                   />
                 </div>
               </div>
 
-              {/* ── FEATHERS (top cone) — lifts + blooms ── */}
+              {/* Feather cone */}
               <div
-                className="absolute inset-x-0 top-0 z-30 overflow-visible"
+                className="absolute inset-x-0 top-0 z-30 overflow-hidden"
                 style={{
                   height: "44%",
-                  opacity: anim.openAmount > 0.12 ? 1 : 0,
-                  transform: `
-                    translateY(-${anim.featherLift}px)
-                    translateZ(${anim.featherLift * 1.2}px)
-                    scale(${featherScale})
-                  `,
+                  opacity: peeled ? 1 : 0,
+                  transform: `translate3d(0, -${anim.featherLift}px, ${anim.featherLift}px) scale(${featherScale})`,
                   transformOrigin: "50% 100%",
-                  transformStyle: "preserve-3d",
+                  willChange: "transform",
                 }}
               >
-                <div className="relative h-full overflow-hidden drop-shadow-[0_12px_32px_rgba(0,0,0,0.35)]">
-                  <div className="absolute inset-x-0 top-0 h-[227%]">
-                    <ShuttleImage
-                      style={{
-                        filter:
-                          highlight === "feathers" || highlight === "geometry"
-                            ? "brightness(1.1) drop-shadow(0 0 14px rgba(32,182,232,0.35))"
-                            : undefined,
-                      }}
-                    />
-                  </div>
+                <div className="absolute inset-x-0 top-0 h-[227%]">
+                  <ShuttleImage
+                    style={{
+                      filter:
+                        highlight === "feathers" || highlight === "geometry"
+                          ? "brightness(1.08) drop-shadow(0 0 12px rgba(32,182,232,0.3))"
+                          : undefined,
+                    }}
+                  />
                 </div>
               </div>
 
-              {/* Assembled shuttle stays solid until the peel really starts */}
+              {/* Intact assembled shuttle — fades out as it opens, back in as it closes */}
               <div
                 className="pointer-events-none absolute inset-0 z-40"
-                style={{
-                  opacity:
-                    anim.openAmount < 0.12
-                      ? 1
-                      : Math.max(0, 1 - (anim.openAmount - 0.12) * 8),
-                }}
+                style={{ opacity: anim.assembledOpacity }}
               >
                 <Image
                   src={SHUTTLE_SRC}
@@ -294,17 +296,16 @@ export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Pr
                 />
               </div>
 
-              {/* Soft focus glow — never a boxed bar across the feathers */}
-              {highlight && highlight !== "intro" && anim.openAmount > 0.12 && (
+              {highlight && highlight !== "intro" && showCallouts && (
                 <div
-                  className="pointer-events-none absolute z-50 rounded-[40%] border border-af-cyan/50"
+                  className="pointer-events-none absolute z-50 rounded-[42%] border border-af-cyan/40"
                   style={{
                     top: `${HIGHLIGHT_ZONES[highlight].top}%`,
                     left: `${HIGHLIGHT_ZONES[highlight].left}%`,
                     width: `${HIGHLIGHT_ZONES[highlight].width}%`,
                     height: `${HIGHLIGHT_ZONES[highlight].height}%`,
-                    opacity: 0.35 + chapterLocal * 0.25,
-                    boxShadow: "0 0 24px rgba(32,182,232,0.25)",
+                    opacity: 0.28 + chapterLocal * 0.2,
+                    boxShadow: "0 0 20px rgba(32,182,232,0.2)",
                     transform: `translateY(-${
                       highlight === "feathers" || highlight === "geometry"
                         ? anim.featherLift
@@ -316,8 +317,7 @@ export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Pr
                 />
               )}
 
-              {/* Geometry arcs */}
-              {highlight === "geometry" && (
+              {highlight === "geometry" && showCallouts && (
                 <svg
                   className="pointer-events-none absolute inset-0 z-[45] h-full w-full overflow-visible"
                   style={{
@@ -335,8 +335,8 @@ export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Pr
                       ry="3.5%"
                       fill="none"
                       stroke="#20B6E8"
-                      strokeWidth="2"
-                      opacity={0.65 - i * 0.12}
+                      strokeWidth="1.75"
+                      opacity={0.5 - i * 0.1}
                       strokeDasharray="6 4"
                     />
                   ))}
@@ -346,7 +346,6 @@ export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Pr
           </div>
         </div>
 
-        {/* Bottom strip — progress + mobile/tablet explanation (never over feather tips) */}
         <div className="relative z-50 border-t border-af-cyan/10 bg-af-bg/80 px-4 py-4 backdrop-blur-md lg:hidden">
           {chapterIdx > 0 ? (
             <div className="mx-auto max-w-md">
@@ -365,13 +364,6 @@ export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Pr
                 {chapter.num} — {chapter.title}
               </p>
               <p className="mt-1.5 text-sm leading-relaxed text-af-muted">{chapter.desc}</p>
-              <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
-                {chapter.bullets.map((b) => (
-                  <li key={b} className="text-xs text-af-text/80">
-                    • {b}
-                  </li>
-                ))}
-              </ul>
             </div>
           ) : (
             <div className="mx-auto flex max-w-md gap-1.5">
