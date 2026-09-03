@@ -57,6 +57,9 @@ export const CHAPTERS: ChapterInfo[] = [
 /** Chapter windows across the full 0→1 scroll track (cork runs through the end). */
 const CHAPTER_BOUNDS = [0, 0.08, 0.26, 0.44, 0.62, 1] as const;
 
+/** First-segment hold: reverse playback snaps to the assembled start pose here. */
+export const CLOSED_PROGRESS = 0.02;
+
 function clamp01(v: number) {
   return Math.max(0, Math.min(1, v));
 }
@@ -134,6 +137,29 @@ export type ScrollViewAnim = {
   local: number;
 };
 
+export function isFullyClosed(progress: number): boolean {
+  return clamp01(progress) < CHAPTER_BOUNDS[1];
+}
+
+/** Assembled start pose — reverse playback must land here, not a mid-explode. */
+function closedAnim(progress: number, local: number): ScrollViewAnim {
+  const p = clamp01(progress);
+  return {
+    focusY: 0,
+    focusScale: 1,
+    tiltY: lerp(-2, 3, p),
+    tiltX: -1 + Math.sin(p * Math.PI) * 1.5,
+    featherLift: 0,
+    featherSpread: 0,
+    bindingLift: 0,
+    corkGlow: 0,
+    openAmount: 0,
+    highlight: null,
+    chapter: 0,
+    local: easeOutCubic(clamp01(local)),
+  };
+}
+
 /** Lift values in px — tuned for ~400px-wide stage */
 export function getScrollAnim(progress: number): ScrollViewAnim {
   const p = clamp01(progress);
@@ -156,8 +182,7 @@ export function getScrollAnim(progress: number): ScrollViewAnim {
 
   switch (chapter) {
     case 0:
-      openAmount = eased * 0.05;
-      break;
+      return closedAnim(p, local);
     case 1:
       focusY = lerp(24, 56, eased);
       focusScale = lerp(0.98, 1.02, eased);
