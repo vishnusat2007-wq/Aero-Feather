@@ -8,6 +8,7 @@ import {
   updateOrderStatus,
   upsertProduct,
 } from "@/lib/data";
+import { createClient } from "@/lib/supabase/server";
 import {
   DEFAULT_HOMEPAGE,
   getHomepageContent,
@@ -34,7 +35,29 @@ export async function saveProductAction(formData: FormData) {
   const stock = parseInt(formData.get("stock")?.toString() ?? "0", 10);
   const active = formData.get("active") === "on";
   const featured = formData.get("featured") === "on";
-  const imageUrl = formData.get("image_url")?.toString() || null;
+  let imageUrl = formData.get("image_url")?.toString() || null;
+
+  const image = formData.get("image");
+  if (image instanceof File && image.size > 0) {
+    if (image.size > 5 * 1024 * 1024) {
+      throw new Error("Image must be under 5MB");
+    }
+    const supabase = await createClient();
+    const ext = image.name.split(".").pop()?.toLowerCase() || "jpg";
+    const path = `${slug || "product"}-${Date.now()}.${ext}`;
+    const { error: uploadError } = await supabase.storage
+      .from("product-images")
+      .upload(path, image, {
+        cacheControl: "3600",
+        upsert: true,
+        contentType: image.type || "image/jpeg",
+      });
+    if (uploadError) throw new Error(uploadError.message);
+    const { data: publicData } = supabase.storage
+      .from("product-images")
+      .getPublicUrl(path);
+    imageUrl = publicData.publicUrl;
+  }
 
   await upsertProduct({
     ...(id ? { id } : {}),
@@ -54,8 +77,28 @@ export async function saveProductAction(formData: FormData) {
   });
 
   revalidatePath("/shop");
+  revalidatePath("/");
   revalidatePath("/admin/products");
+  revalidatePath("/admin/inventory");
   redirect("/admin/products");
+}
+
+export async function updateStockAction(formData: FormData) {
+  await requireAdmin();
+  const id = formData.get("id")?.toString();
+  const stock = parseInt(formData.get("stock")?.toString() ?? "0", 10);
+  if (!id || Number.isNaN(stock) || stock < 0) return;
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("af_products")
+    .update({ stock, updated_at: new Date().toISOString() })
+    .eq("id", id);
+  if (error) throw error;
+
+  revalidatePath("/admin/inventory");
+  revalidatePath("/admin/products");
+  revalidatePath("/shop");
 }
 
 export async function deleteProductAction(formData: FormData) {

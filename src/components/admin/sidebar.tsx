@@ -10,6 +10,8 @@ import {
   Globe,
   Wallet,
   Wrench,
+  ChartColumn,
+  Boxes,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { LogoMark } from "@/components/store/logo";
@@ -21,12 +23,14 @@ const overview: NavItem[] = [
 ];
 
 const finance: NavItem[] = [
+  { href: "/admin/finance", label: "Revenue", icon: ChartColumn },
   { href: "/admin/orders", label: "Orders", icon: ShoppingBag },
 ];
 
 const website: NavItem[] = [
   { href: "/admin/website", label: "Site content", icon: Globe },
   { href: "/admin/products", label: "Products", icon: Package },
+  { href: "/admin/inventory", label: "Inventory", icon: Boxes },
 ];
 
 function NavLink({ href, label, icon: Icon }: NavItem) {

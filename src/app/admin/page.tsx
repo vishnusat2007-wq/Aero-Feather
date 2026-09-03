@@ -63,6 +63,12 @@ export default async function AdminDashboardPage() {
         <Button variant="ghost" asChild>
           <Link href="/admin/website">Website Manager</Link>
         </Button>
+        <Button variant="ghost" asChild>
+          <Link href="/admin/finance">Finance</Link>
+        </Button>
+        <Button variant="ghost" asChild>
+          <Link href="/admin/inventory">Inventory</Link>
+        </Button>
       </div>
 
       <div className="mt-10">
