@@ -241,12 +241,15 @@ export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Pr
               style={{
                 aspectRatio: `${IMG_W} / ${IMG_H}`,
                 maxHeight:
-                  highlight === "feathers" || highlight === "geometry"
-                    ? "min(58vh, 520px)"
-                    : "min(64vh, 580px)",
+                  closed || (highlight !== "feathers" && highlight !== "geometry")
+                    ? "min(64vh, 580px)"
+                    : "min(58vh, 520px)",
               }}
             >
-              {/* Gap labels between layers when open */}
+              {/* Exploded slices unmount when assembled so a phone crop cannot
+                  leave a leftover cork / feather / binding ghost. */}
+              {!closed && (
+              <>
               {gapVisible && anim.featherLift > 8 && (
                 <div
                   className="pointer-events-none absolute left-1/2 z-0 -translate-x-1/2 rounded border border-af-cyan/30 bg-af-bg/80 px-2 py-0.5 text-[8px] font-bold tracking-widest text-af-cyan uppercase backdrop-blur-sm"
@@ -372,8 +375,10 @@ export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Pr
                   </div>
                 </div>
               </div>
+              </>
+              )}
 
-              {/* Assembled shuttle stays solid until the peel really starts */}
+              {/* Assembled shuttle is the only layer when closed */}
               <div
                 className="pointer-events-none absolute inset-0 z-40"
                 style={{
@@ -390,7 +395,7 @@ export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Pr
                   width={IMG_W}
                   height={IMG_H}
                   priority
-                  className="h-full w-full object-contain"
+                  className="absolute inset-0 h-full w-full object-contain object-top"
                 />
               </div>
 
@@ -417,7 +422,7 @@ export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Pr
               )}
 
               {/* Geometry arcs */}
-              {highlight === "geometry" && (
+              {!closed && highlight === "geometry" && (
                 <svg
                   className="pointer-events-none absolute inset-0 z-[45] h-full w-full overflow-visible"
                   style={{
