@@ -80,11 +80,9 @@ html.light {
   --font-sans: var(--font-jakarta);
 }
 
-/* Smooth scroll for in-page anchors only — avoid fighting the hero scroll scrub */
-@media (prefers-reduced-motion: no-preference) {
-  html:not(.af-hero-scrolling) {
-    scroll-behavior: smooth;
-  }
+/* Prefer instant scrolling so the hero scrub stays in sync; anchors still jump cleanly */
+html {
+  scroll-behavior: auto;
 }
 
 body {
