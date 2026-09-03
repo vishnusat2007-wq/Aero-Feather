@@ -14,7 +14,7 @@ export default async function AdminLayout({
   const maintenanceEnabled = await getMaintenanceEnabled();
 
   return (
-    <div className="flex min-h-screen bg-[#060b18] text-slate-100">
+    <div className="af-admin flex min-h-screen bg-[#060b18] text-slate-100">
       <AdminSidebar maintenanceEnabled={maintenanceEnabled} />
       <div className="flex-1 overflow-auto p-6 md:p-10">{children}</div>
     </div>
