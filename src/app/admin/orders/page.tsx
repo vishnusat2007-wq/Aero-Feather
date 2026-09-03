@@ -9,12 +9,15 @@ export default async function AdminOrdersPage() {
 
   return (
     <div>
-      <h1 className="text-3xl font-bold text-navy">Orders</h1>
-      <p className="mt-1 text-slate-600">{orders.length} total orders</p>
+      <p className="text-[11px] font-semibold tracking-[0.2em] text-af-cyan uppercase">
+        Finance
+      </p>
+      <h1 className="mt-1 text-3xl font-bold text-white">Orders</h1>
+      <p className="mt-1 text-slate-400">{orders.length} total orders</p>
 
-      <div className="mt-8 overflow-hidden rounded-2xl border border-slate-200 bg-white">
+      <div className="mt-8 overflow-hidden rounded-2xl border border-white/10 bg-[#0d1a34]">
         <table className="w-full text-sm">
-          <thead className="bg-slate-50 text-left text-slate-500">
+          <thead className="bg-white/5 text-left text-slate-400">
             <tr>
               <th className="px-4 py-3">Customer</th>
               <th className="px-4 py-3">Total</th>
@@ -25,9 +28,9 @@ export default async function AdminOrdersPage() {
           </thead>
           <tbody>
             {orders.map((order) => (
-              <tr key={order.id} className="border-t border-slate-100">
-                <td className="px-4 py-3">{order.email}</td>
-                <td className="px-4 py-3 font-medium">
+              <tr key={order.id} className="border-t border-white/5">
+                <td className="px-4 py-3 text-slate-200">{order.email}</td>
+                <td className="px-4 py-3 font-medium text-white">
                   {formatPrice(order.total_cents)}
                 </td>
                 <td className="px-4 py-3">

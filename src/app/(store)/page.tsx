@@ -15,6 +15,7 @@ import { HeroSection } from "@/components/store/hero-section";
 import { ProductCard } from "@/components/store/product-card";
 import { Button } from "@/components/ui/button";
 import { getFeaturedProducts } from "@/lib/data";
+import { getHomepageContent } from "@/lib/site-settings";
 
 const trustItems = [
   { icon: Award, label: "Tournament Grade" },
@@ -23,59 +24,12 @@ const trustItems = [
   { icon: Truck, label: "Fast Irish Delivery" },
 ];
 
-const performanceItems = [
-  {
-    title: "Stable Flight",
-    desc: "Precision-weighted cork bases and calibrated feather selection for predictable trajectory in every hall.",
-    metric: "±2%",
-    metricLabel: "flight variance",
-  },
-  {
-    title: "Exceptional Durability",
-    desc: "Engineered for extended rally play — fewer mid-session replacements during training and league fixtures.",
-    metric: "12+",
-    metricLabel: "games per tube",
-  },
-  {
-    title: "Tournament Consistency",
-    desc: "Batch-tested for speed rating accuracy across 76, 77 and 78 — matched to Irish indoor conditions.",
-    metric: "100%",
-    metricLabel: "speed tested",
-  },
-  {
-    title: "Selected Goose Feathers",
-    desc: "Hand-selected premium goose feathers with natural curvature optimised for aerodynamic stability.",
-    metric: "A+",
-    metricLabel: "feather grade",
-  },
-];
-
-const testimonials = [
-  {
-    quote:
-      "We've switched our entire club to Aero Feather Pro 77. The flight consistency in our Dublin hall is noticeably better — our players trust every tube.",
-    author: "Marcus O'Brien",
-    role: "Head Coach, Leinster BC",
-    rating: 5,
-  },
-  {
-    quote:
-      "Finally a shuttlecock brand that understands Irish playing conditions. Speed 77 is perfect for our venue temperature.",
-    author: "Sarah Lynch",
-    role: "Competitive Player, Cork",
-    rating: 5,
-  },
-  {
-    quote:
-      "Bulk ordering for our league was seamless. Quality is tournament-grade and delivery across Ireland was next-day.",
-    author: "David Murphy",
-    role: "Club Secretary, Galway BC",
-    rating: 5,
-  },
-];
-
 export default async function HomePage() {
-  const featured = await getFeaturedProducts(3);
+  const [featured, homepage] = await Promise.all([
+    getFeaturedProducts(3),
+    getHomepageContent(),
+  ]);
+  const { performance, testimonials } = homepage;
 
   return (
     <>
@@ -140,17 +94,17 @@ export default async function HomePage() {
           <FadeIn>
             <div className="mb-16 max-w-2xl">
               <p className="mb-3 text-[11px] font-semibold tracking-[0.22em] text-af-cyan uppercase">
-                Engineering
+                {performance.eyebrow}
               </p>
               <h2 className="text-3xl font-bold tracking-tight text-af-text sm:text-4xl">
-                Performance you can feel.
+                {performance.title}
               </h2>
             </div>
           </FadeIn>
 
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {performanceItems.map((item, i) => (
-              <FadeIn key={item.title} delay={i * 70}>
+            {performance.items.map((item, i) => (
+              <FadeIn key={`${item.title}-${i}`} delay={i * 70}>
                 <div className="group relative h-full border border-af-cyan/10 bg-af-surface p-6 transition-colors hover:border-af-cyan/25">
                   <div className="mb-6 flex items-baseline justify-between">
                     <span className="text-3xl font-bold tracking-tight af-gradient-text">
@@ -277,17 +231,17 @@ export default async function HomePage() {
           <FadeIn>
             <div className="mb-14 text-center">
               <p className="mb-3 text-[11px] font-semibold tracking-[0.22em] text-af-cyan uppercase">
-                Social proof
+                {testimonials.eyebrow}
               </p>
               <h2 className="text-3xl font-bold tracking-tight text-af-text sm:text-4xl">
-                Trusted on court.
+                {testimonials.title}
               </h2>
             </div>
           </FadeIn>
 
           <div className="grid gap-6 md:grid-cols-3">
-            {testimonials.map((t, i) => (
-              <FadeIn key={t.author} delay={i * 80}>
+            {testimonials.items.map((t, i) => (
+              <FadeIn key={`${t.author}-${i}`} delay={i * 80}>
                 <blockquote className="flex h-full flex-col border border-af-cyan/10 bg-af-surface p-8">
                   <div className="mb-4 flex gap-0.5">
                     {Array.from({ length: t.rating }).map((_, j) => (

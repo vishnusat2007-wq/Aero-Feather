@@ -8,6 +8,14 @@ import {
   updateOrderStatus,
   upsertProduct,
 } from "@/lib/data";
+import {
+  DEFAULT_HOMEPAGE,
+  getHomepageContent,
+  setSiteSetting,
+  type HomepageContent,
+  type PerformanceItem,
+  type TestimonialItem,
+} from "@/lib/site-settings";
 
 async function requireAdmin() {
   if (!(await isAdmin())) throw new Error("Unauthorized");
@@ -74,4 +82,74 @@ export async function updateOrderStatusAction(formData: FormData) {
   await updateOrderStatus(id, status);
   revalidatePath("/admin/orders");
   revalidatePath(`/admin/orders/${id}`);
+}
+
+export async function toggleMaintenanceAction(formData: FormData) {
+  await requireAdmin();
+  const enabled = formData.get("enabled") === "true";
+  await setSiteSetting("maintenance", { enabled });
+  revalidatePath("/");
+  revalidatePath("/admin");
+  revalidatePath("/admin/website");
+  revalidatePath("/maintenance");
+}
+
+export async function savePerformanceAction(formData: FormData) {
+  await requireAdmin();
+  const current = await getHomepageContent();
+  const count = Number(formData.get("count") ?? 0);
+  const items: PerformanceItem[] = [];
+
+  for (let i = 0; i < count; i++) {
+    items.push({
+      title: formData.get(`title_${i}`)?.toString() ?? "",
+      desc: formData.get(`desc_${i}`)?.toString() ?? "",
+      metric: formData.get(`metric_${i}`)?.toString() ?? "",
+      metricLabel: formData.get(`metricLabel_${i}`)?.toString() ?? "",
+    });
+  }
+
+  const next: HomepageContent = {
+    ...current,
+    performance: {
+      eyebrow: formData.get("eyebrow")?.toString() || DEFAULT_HOMEPAGE.performance.eyebrow,
+      title: formData.get("title")?.toString() || DEFAULT_HOMEPAGE.performance.title,
+      items: items.length ? items : DEFAULT_HOMEPAGE.performance.items,
+    },
+  };
+
+  await setSiteSetting("homepage", next);
+  revalidatePath("/");
+  revalidatePath("/admin/website");
+  redirect("/admin/website?saved=performance");
+}
+
+export async function saveTestimonialsAction(formData: FormData) {
+  await requireAdmin();
+  const current = await getHomepageContent();
+  const count = Number(formData.get("count") ?? 0);
+  const items: TestimonialItem[] = [];
+
+  for (let i = 0; i < count; i++) {
+    items.push({
+      quote: formData.get(`quote_${i}`)?.toString() ?? "",
+      author: formData.get(`author_${i}`)?.toString() ?? "",
+      role: formData.get(`role_${i}`)?.toString() ?? "",
+      rating: Math.min(5, Math.max(1, Number(formData.get(`rating_${i}`) ?? 5))),
+    });
+  }
+
+  const next: HomepageContent = {
+    ...current,
+    testimonials: {
+      eyebrow: formData.get("eyebrow")?.toString() || DEFAULT_HOMEPAGE.testimonials.eyebrow,
+      title: formData.get("title")?.toString() || DEFAULT_HOMEPAGE.testimonials.title,
+      items: items.length ? items : DEFAULT_HOMEPAGE.testimonials.items,
+    },
+  };
+
+  await setSiteSetting("homepage", next);
+  revalidatePath("/");
+  revalidatePath("/admin/website");
+  redirect("/admin/website?saved=testimonials");
 }

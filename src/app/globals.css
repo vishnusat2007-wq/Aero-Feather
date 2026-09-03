@@ -1,26 +1,7 @@
 @import "tailwindcss";
 
-/* ── Semantic tokens (theme-aware) ── */
-:root {
-  --af-bg: #f4f6fa;
-  --af-bg-secondary: #e8ecf4;
-  --af-surface: #ffffff;
-  --af-surface-elevated: #fafbfd;
-  --af-cyan: #20b6e8;
-  --af-blue: #168cd8;
-  --af-text: #0d1a34;
-  --af-muted: #5a6b85;
-  --af-border: rgba(13, 26, 52, 0.08);
-  --af-border-accent: rgba(32, 182, 232, 0.25);
-  --af-shadow: rgba(13, 26, 52, 0.06);
-  --af-shadow-strong: rgba(13, 26, 52, 0.12);
-  --af-glow: rgba(32, 182, 232, 0.15);
-  --logo-navy: #0d1a34;
-  --logo-navy-light: #168cd8;
-  --af-btn-primary-text: #ffffff;
-  --af-hero-gradient-end: #f4f6fa;
-}
-
+/* ── Semantic tokens (theme-aware) — dark by default ── */
+:root,
 .dark {
   --af-bg: #060b18;
   --af-bg-secondary: #081326;
@@ -39,6 +20,28 @@
   --logo-navy-light: #94a3b8;
   --af-btn-primary-text: #060b18;
   --af-hero-gradient-end: #060b18;
+  color-scheme: dark;
+}
+
+.light {
+  --af-bg: #f4f6fa;
+  --af-bg-secondary: #e8ecf4;
+  --af-surface: #ffffff;
+  --af-surface-elevated: #fafbfd;
+  --af-cyan: #20b6e8;
+  --af-blue: #168cd8;
+  --af-text: #0d1a34;
+  --af-muted: #5a6b85;
+  --af-border: rgba(13, 26, 52, 0.08);
+  --af-border-accent: rgba(32, 182, 232, 0.25);
+  --af-shadow: rgba(13, 26, 52, 0.06);
+  --af-shadow-strong: rgba(13, 26, 52, 0.12);
+  --af-glow: rgba(32, 182, 232, 0.15);
+  --logo-navy: #0d1a34;
+  --logo-navy-light: #168cd8;
+  --af-btn-primary-text: #ffffff;
+  --af-hero-gradient-end: #f4f6fa;
+  color-scheme: light;
 }
 
 @theme inline {

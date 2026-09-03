@@ -16,7 +16,7 @@ export function ProductForm({ product }: { product?: Product }) {
         await saveProductAction(formData);
         router.refresh();
       }}
-      className="max-w-2xl space-y-6 rounded-2xl border border-slate-200 bg-white p-8"
+      className="max-w-2xl space-y-6 rounded-2xl border border-white/10 bg-[#0d1a34] p-8 text-slate-200"
     >
       {product?.id && <input type="hidden" name="id" value={product.id} />}
 
