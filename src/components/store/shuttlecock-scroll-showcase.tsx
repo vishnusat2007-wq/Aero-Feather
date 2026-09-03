@@ -127,8 +127,8 @@ export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Pr
             <span className="h-5 w-px animate-af-float bg-af-cyan/60" />
           </div>
 
-          <div
-            className="relative z-10 w-full max-w-[400px] overflow-hidden lg:max-w-[420px]"
+            <div
+            className="relative z-10 w-full max-w-[400px] overflow-hidden bg-transparent lg:max-w-[420px]"
             style={{
               aspectRatio: `${IMG_W} / ${IMG_H}`,
               maxHeight: "min(68vh, 620px)",
