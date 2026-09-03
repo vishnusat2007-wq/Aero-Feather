@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 
 export type PerformanceItem = {
   title: string;
@@ -88,6 +88,7 @@ export const DEFAULT_HOMEPAGE: HomepageContent = {
 };
 
 export async function getSiteSetting<T>(key: string, fallback: T): Promise<T> {
+  if (!isSupabaseConfigured()) return fallback;
   try {
     const supabase = await createClient();
     const { data, error } = await supabase
