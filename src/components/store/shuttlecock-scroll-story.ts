@@ -177,6 +177,7 @@ export type ScrollViewAnim = {
   glow: number;
   inspect: number;
   settle: number;
+  assemblingLabel: number;
   closing: boolean;
   highlight: Exclude<ScrollChapter, "intro" | "assemble"> | null;
   chapter: number;
@@ -199,6 +200,7 @@ export function getScrollAnim(progress: number): ScrollViewAnim {
   const inspect = pulse(p, 0.07, 0.16, 0.58, 0.78);
   const closing = p >= CHAPTER_BOUNDS[5];
   const settle = pulse(p, 0.78, 0.86, 0.9, 0.98);
+  const assemblingLabel = pulse(p, 0.66, 0.72, 0.88, 0.96);
 
   const tiltY = lerp(-0.4, 2.1, cam.bloom);
   const tiltX = -0.35 + Math.sin(p * Math.PI) * 0.7;
@@ -216,6 +218,7 @@ export function getScrollAnim(progress: number): ScrollViewAnim {
     glow,
     inspect,
     settle,
+    assemblingLabel,
     closing,
     highlight: part,
     chapter,

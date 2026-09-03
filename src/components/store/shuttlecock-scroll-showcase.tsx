@@ -192,10 +192,10 @@ export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Pr
                 </div>
               )}
 
-              {anim.closing && (
+              {anim.assemblingLabel > 0.04 && (
                 <div
                   className="pointer-events-none absolute left-1/2 top-[4%] z-20 -translate-x-1/2 rounded-md border border-af-cyan/25 bg-af-bg/70 px-2.5 py-1 text-[9px] font-bold tracking-[0.16em] text-af-cyan uppercase backdrop-blur-sm"
-                  style={{ opacity: 0.25 + anim.settle * 0.55 + (anim.closing ? 0.2 : 0) }}
+                  style={{ opacity: anim.assemblingLabel }}
                 >
                   Assembling
                 </div>
