@@ -1,44 +1,41 @@
 "use client";
 
-import { useState } from "react";
+import { useActionState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/input";
 import { updatePasswordAction } from "@/lib/auth/actions";
+import {
+  MIN_PASSWORD_LENGTH,
+  type PasswordFormState,
+} from "@/lib/auth/password";
+
+const initialState: PasswordFormState = {};
 
 export function ChangePasswordForm() {
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
+  const [state, formAction, pending] = useActionState(
+    updatePasswordAction,
+    initialState,
+  );
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
-    setSuccess(false);
-
-    const formData = new FormData(e.currentTarget);
-    try {
-      await updatePasswordAction(formData);
-      setSuccess(true);
-      e.currentTarget.reset();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not update password");
-    } finally {
-      setLoading(false);
+  useEffect(() => {
+    if (state.success) {
+      formRef.current?.reset();
     }
-  }
+  }, [state]);
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form ref={formRef} action={formAction} className="space-y-4">
       <div className="space-y-2">
         <Label htmlFor="password">New password</Label>
         <Input
           id="password"
           name="password"
           type="password"
-          minLength={6}
+          minLength={MIN_PASSWORD_LENGTH}
           required
           autoComplete="new-password"
+          disabled={pending}
         />
       </div>
       <div className="space-y-2">
@@ -47,17 +44,18 @@ export function ChangePasswordForm() {
           id="confirm_password"
           name="confirm_password"
           type="password"
-          minLength={6}
+          minLength={MIN_PASSWORD_LENGTH}
           required
           autoComplete="new-password"
+          disabled={pending}
         />
       </div>
-      {error && <p className="text-sm text-red-400">{error}</p>}
-      {success && (
+      {state.error && <p className="text-sm text-red-400">{state.error}</p>}
+      {state.success && (
         <p className="text-sm text-af-cyan">Password updated successfully.</p>
       )}
-      <Button type="submit" variant="outline" size="sm" disabled={loading}>
-        {loading ? "Updating…" : "Change password"}
+      <Button type="submit" variant="outline" size="sm" disabled={pending}>
+        {pending ? "Updating…" : "Change password"}
       </Button>
     </form>
   );
