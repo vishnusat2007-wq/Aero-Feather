@@ -4,10 +4,12 @@ import {
   REVERSE_CLOSE_END_MOBILE,
   advanceScrub,
   getForwardAnim,
+  getReverseExplodedOpacity,
   getReverseCloseAmount,
   getScrollAnim,
   isAssembledPose,
   isFullyClosed,
+  isReverseAssembledPose,
   shouldShowExplodedLayers,
 } from "./shuttlecock-scroll-story.ts";
 
@@ -110,6 +112,19 @@ describe("reverse close returns to the assembled start pose", () => {
     assert.equal(false, shouldShowExplodedLayers(anim));
     assert.ok(anim.featherLift < 8);
     assert.ok(anim.bindingLift < 8);
+  });
+
+  it("crossfades the moving slices before unmounting them on reverse", () => {
+    const visible = pose(0.6, 1);
+    const fading = pose(0.4, 1);
+    const assembled = pose(0.15, 1);
+
+    assert.equal(getReverseExplodedOpacity(visible), 1);
+    assert.ok(getReverseExplodedOpacity(fading) > 0);
+    assert.ok(getReverseExplodedOpacity(fading) < 1);
+    assert.equal(getReverseExplodedOpacity(assembled), 0);
+    assert.equal(false, isReverseAssembledPose(fading));
+    assert.equal(true, isReverseAssembledPose(assembled));
   });
 });
 

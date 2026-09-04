@@ -9,9 +9,11 @@ import {
   REVERSE_CLOSE_END_DESKTOP,
   REVERSE_CLOSE_END_MOBILE,
   advanceScrub,
+  getReverseExplodedOpacity,
   getScrollAnim,
   HIGHLIGHT_ZONES,
   isAssembledPose,
+  isReverseAssembledPose,
   shouldShowExplodedLayers,
   type HeroStage,
 } from "@/components/store/shuttlecock-scroll-story";
@@ -170,8 +172,16 @@ export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Pr
   }, [chapter.num, chapter.label, onStageChange, onChapterChange, chapterIdx]);
 
   const featherScale = 1 + anim.featherSpread;
-  const closed = isAssembledPose(anim);
-  const showExploded = shouldShowExplodedLayers(anim);
+  const reversing = !reducedMotion && effectiveProgress + 0.001 < scrub.peak;
+  const reverseAssembled = isReverseAssembledPose(anim);
+  const closed = reversing ? reverseAssembled : isAssembledPose(anim);
+  const showExploded = reversing ? !reverseAssembled : shouldShowExplodedLayers(anim);
+  const explodedOpacity = reversing ? getReverseExplodedOpacity(anim) : 1;
+  const assembledOpacity = reversing
+    ? 1 - explodedOpacity
+    : showExploded
+      ? Math.max(0, 1 - (anim.openAmount - 0.12) * 8)
+      : 1;
   const gapVisible = showExploded && anim.openAmount > 0.08;
 
   return (
@@ -231,7 +241,7 @@ export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Pr
               {/* Exploded slices stay unmounted whenever the assembled PNG owns
                   the frame — leftover cork/feather crops cannot sit underneath. */}
               {showExploded && (
-              <>
+              <div className="absolute inset-0" style={{ opacity: explodedOpacity }}>
               {gapVisible && anim.featherLift > 8 && (
                 <div
                   className="pointer-events-none absolute left-1/2 z-0 -translate-x-1/2 rounded border border-af-cyan/30 bg-af-bg/80 px-2 py-0.5 text-[8px] font-bold tracking-widest text-af-cyan uppercase backdrop-blur-sm"
@@ -357,16 +367,14 @@ export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Pr
                   </div>
                 </div>
               </div>
-              </>
+              </div>
               )}
 
               {/* Assembled shuttle is the only layer when closed */}
               <div
                 className="pointer-events-none absolute inset-0 z-40"
                 style={{
-                  opacity: showExploded
-                    ? Math.max(0, 1 - (anim.openAmount - 0.12) * 8)
-                    : 1,
+                  opacity: assembledOpacity,
                 }}
               >
                 <Image

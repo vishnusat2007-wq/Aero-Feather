@@ -159,6 +159,14 @@ export function isFullyClosed(progress: number): boolean {
  */
 export const ASSEMBLED_OPEN_AMOUNT = 0.12;
 
+/**
+ * During reverse playback, fade the moving slices away only as they physically
+ * meet the assembled image. This removes the last-frame pop without changing
+ * any of the forward/opening keyframes.
+ */
+export const REVERSE_CROSSFADE_START = 0.245;
+export const REVERSE_ASSEMBLED_OPEN_AMOUNT = 0.015;
+
 /** True when the pose matches the first-segment assembled shuttle. */
 export function isAssembledPose(anim: ScrollViewAnim): boolean {
   return anim.openAmount <= ASSEMBLED_OPEN_AMOUNT;
@@ -167,6 +175,22 @@ export function isAssembledPose(anim: ScrollViewAnim): boolean {
 /** Exploded crops only while the peel is actually open. */
 export function shouldShowExplodedLayers(anim: ScrollViewAnim): boolean {
   return anim.openAmount > ASSEMBLED_OPEN_AMOUNT;
+}
+
+/** True only once the reverse-moving parts are effectively back in place. */
+export function isReverseAssembledPose(anim: ScrollViewAnim): boolean {
+  return (
+    anim.openAmount <= REVERSE_ASSEMBLED_OPEN_AMOUNT &&
+    anim.featherLift <= 1.25 &&
+    anim.bindingLift <= 1.25 &&
+    anim.featherSpread <= 0.005
+  );
+}
+
+/** Opacity for the moving slices while the reverse close crossfades. */
+export function getReverseExplodedOpacity(anim: ScrollViewAnim): number {
+  const span = REVERSE_CROSSFADE_START - REVERSE_ASSEMBLED_OPEN_AMOUNT;
+  return clamp01((anim.openAmount - REVERSE_ASSEMBLED_OPEN_AMOUNT) / span);
 }
 
 /** Assembled start pose — reverse playback must land here, not a mid-explode. */
