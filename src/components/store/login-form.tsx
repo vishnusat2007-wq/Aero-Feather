@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useActionState, useState } from "react";
+import { authenticateAction, type AuthFormState } from "@/lib/auth/actions";
 import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/input";
-import { createClient } from "@/lib/supabase/client";
 
 type Props = {
   next?: string;
@@ -11,88 +11,32 @@ type Props = {
   allowSignup?: boolean;
 };
 
+const initialState: AuthFormState = {};
+
 export function LoginForm({
   next = "/account",
   defaultMode = "login",
   allowSignup = true,
 }: Props) {
   const [mode, setMode] = useState<"login" | "signup">(defaultMode);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [fullName, setFullName] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [message, setMessage] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
-    setMessage(null);
-    const supabase = createClient();
-
-    if (!supabase) {
-      setError(
-        "Sign-in isn’t available yet — the store owner still needs to finish setup.",
-      );
-      setLoading(false);
-      return;
-    }
-
-    if (mode === "signup") {
-      const { data, error: signUpError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: { full_name: fullName },
-          emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
-        },
-      });
-      if (signUpError) {
-        setError(signUpError.message);
-        setLoading(false);
-        return;
-      }
-
-      if (data.session && data.user) {
-        void fetch("/api/auth/setup-profile", { method: "POST" }).catch(() => {});
-        window.location.assign(next);
-        return;
-      }
-
-      setMessage(
-        "Account created. Check your email to confirm your address, then sign in.",
-      );
-      setLoading(false);
-      setMode("login");
-      return;
-    }
-
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    if (signInError) {
-      setError(signInError.message);
-      setLoading(false);
-      return;
-    }
-
-    void fetch("/api/auth/setup-profile", { method: "POST" }).catch(() => {});
-    window.location.assign(next);
-  }
+  const [state, formAction, pending] = useActionState(
+    authenticateAction,
+    initialState,
+  );
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form action={formAction} className="space-y-4">
+      <input type="hidden" name="mode" value={mode} />
+      <input type="hidden" name="next" value={next} />
       {mode === "signup" && (
         <div className="space-y-2">
           <Label htmlFor="fullName">Full name</Label>
           <Input
             id="fullName"
-            value={fullName}
-            onChange={(e) => setFullName(e.target.value)}
-            required
+            name="fullName"
             autoComplete="name"
+            placeholder="Your name"
+            className="border-af-cyan/35 bg-af-bg"
           />
         </div>
       )}
@@ -100,39 +44,54 @@ export function LoginForm({
         <Label htmlFor="email">Email</Label>
         <Input
           id="email"
+          name="email"
           type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
           required
           autoComplete="email"
+          placeholder="you@example.com"
+          className="border-af-cyan/35 bg-af-bg"
         />
       </div>
       <div className="space-y-2">
         <Label htmlFor="password">Password</Label>
         <Input
           id="password"
+          name="password"
           type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
           minLength={6}
           required
           autoComplete={mode === "signup" ? "new-password" : "current-password"}
+          placeholder="At least 6 characters"
+          className="border-af-cyan/35 bg-af-bg"
         />
       </div>
-      {error && <p className="text-sm text-red-400">{error}</p>}
-      {message && <p className="text-sm text-af-cyan">{message}</p>}
-      <Button type="submit" variant="primary" className="w-full" disabled={loading}>
-        {loading ? "Please wait…" : mode === "login" ? "Sign in" : "Create account"}
+      {state.error && (
+        <p className="text-sm text-red-400" role="alert">
+          {state.error}
+        </p>
+      )}
+      {state.message && (
+        <p className="text-sm text-af-cyan" role="status">
+          {state.message}
+        </p>
+      )}
+      <Button
+        type="submit"
+        variant="primary"
+        className="w-full text-[#060b18]"
+        disabled={pending}
+      >
+        {pending
+          ? "Please wait…"
+          : mode === "login"
+            ? "Sign in"
+            : "Create account"}
       </Button>
       {allowSignup && (
         <button
           type="button"
           className="w-full text-sm text-af-muted transition-colors hover:text-af-cyan"
-          onClick={() => {
-            setMode(mode === "login" ? "signup" : "login");
-            setError(null);
-            setMessage(null);
-          }}
+          onClick={() => setMode(mode === "login" ? "signup" : "login")}
         >
           {mode === "login"
             ? "New customer? Create an account"

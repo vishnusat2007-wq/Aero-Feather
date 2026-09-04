@@ -86,9 +86,10 @@ export function StoreHeader() {
             <Link
               href={loggedIn ? "/account" : "/login"}
               aria-label={loggedIn ? "Account" : "Sign in"}
-              className="flex h-9 w-9 items-center justify-center rounded-lg text-af-muted transition-all hover:bg-af-surface hover:text-af-text"
+              className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-af-cyan/25 bg-af-surface/70 px-2.5 text-[13px] font-semibold text-af-text transition-all hover:border-af-cyan/50 hover:bg-af-surface hover:text-af-cyan sm:px-3"
             >
               <User className="h-[18px] w-[18px]" strokeWidth={1.75} />
+              <span>{loggedIn ? "Account" : "Sign in"}</span>
             </Link>
 
             {authReady && !loggedIn && (
@@ -130,6 +131,8 @@ export function StoreHeader() {
           "fixed inset-0 z-[60] lg:hidden",
           mobileOpen ? "pointer-events-auto" : "pointer-events-none",
         )}
+        inert={!mobileOpen || undefined}
+        aria-hidden={!mobileOpen}
       >
         <div
           className={cn(
@@ -166,6 +169,15 @@ export function StoreHeader() {
                 {link.label}
               </Link>
             ))}
+            {!loggedIn && (
+              <Link
+                href="/login"
+                onClick={() => setMobileOpen(false)}
+                className="rounded-lg px-4 py-3 text-sm font-semibold text-af-text transition-colors hover:bg-af-surface hover:text-af-cyan"
+              >
+                Sign in
+              </Link>
+            )}
             {authReady && !loggedIn && (
               <Link
                 href="/signup"

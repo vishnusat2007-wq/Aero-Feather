@@ -1,8 +1,105 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
+import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { ensureUserProfile } from "@/lib/auth/profile";
+
+export type AuthFormState = {
+  error?: string;
+  message?: string;
+};
+
+function safeInternalPath(value: FormDataEntryValue | null, fallback: string) {
+  const raw = value?.toString() ?? "";
+  if (!raw.startsWith("/") || raw.startsWith("//") || raw.includes("://")) {
+    return fallback;
+  }
+  return raw;
+}
+
+async function getAppOrigin() {
+  const configured = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "");
+  if (configured) return configured;
+  const headerStore = await headers();
+  const host = headerStore.get("x-forwarded-host") ?? headerStore.get("host");
+  const proto = headerStore.get("x-forwarded-proto") ?? "https";
+  return host ? `${proto}://${host}` : "";
+}
+
+export async function authenticateAction(
+  _prev: AuthFormState,
+  formData: FormData,
+): Promise<AuthFormState> {
+  if (!isSupabaseConfigured()) {
+    return {
+      error:
+        "Sign-in isn’t available yet — the store owner still needs to finish setup.",
+    };
+  }
+
+  const mode = formData.get("mode")?.toString() === "signup" ? "signup" : "login";
+  const email = formData.get("email")?.toString().trim() ?? "";
+  const password = formData.get("password")?.toString() ?? "";
+  const fullName = formData.get("fullName")?.toString().trim() ?? "";
+  const next = safeInternalPath(formData.get("next"), "/account");
+
+  if (!email || !password) {
+    return { error: "Enter your email and password to continue." };
+  }
+  if (password.length < 6) {
+    return { error: "Password must be at least 6 characters." };
+  }
+
+  const supabase = await createClient();
+
+  if (mode === "signup") {
+    const origin = await getAppOrigin();
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { full_name: fullName },
+        emailRedirectTo: origin
+          ? `${origin}/auth/callback?next=${encodeURIComponent(next)}`
+          : undefined,
+      },
+    });
+    if (error) return { error: error.message };
+
+    if (data.session && data.user) {
+      try {
+        await ensureUserProfile(data.user);
+      } catch {
+        // Session is already established; profile sync is best-effort.
+      }
+      revalidatePath("/", "layout");
+      redirect(next);
+    }
+
+    return {
+      message:
+        "Account created. Check your email to confirm your address, then sign in.",
+    };
+  }
+
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  });
+  if (error) return { error: error.message };
+  if (data.user) {
+    try {
+      await ensureUserProfile(data.user);
+    } catch {
+      // Session is already established; profile sync is best-effort.
+    }
+  }
+
+  revalidatePath("/", "layout");
+  redirect(next);
+}
 
 export async function updateProfileAction(formData: FormData) {
   const supabase = await createClient();

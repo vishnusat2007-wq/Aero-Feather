@@ -62,7 +62,8 @@ html.light {
   --af-glow: rgba(32, 182, 232, 0.15);
   --logo-navy: #0d1a34;
   --logo-navy-light: #168cd8;
-  --af-btn-primary-text: #ffffff;
+  /* Navy on cyan — white-on-cyan failed contrast and hid “Sign in” in light theme */
+  --af-btn-primary-text: #060b18;
   --af-hero-gradient-end: #f4f6fa;
   color-scheme: light;
 }
