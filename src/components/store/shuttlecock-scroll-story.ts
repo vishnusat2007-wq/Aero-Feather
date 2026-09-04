@@ -164,7 +164,7 @@ export const ASSEMBLED_OPEN_AMOUNT = 0.12;
  * meet the assembled image. This removes the last-frame pop without changing
  * any of the forward/opening keyframes.
  */
-export const REVERSE_CROSSFADE_START = 0.245;
+export const REVERSE_LAYER_HANDOFF = 0.06;
 export const REVERSE_ASSEMBLED_OPEN_AMOUNT = 0.015;
 
 /** True when the pose matches the first-segment assembled shuttle. */
@@ -187,10 +187,18 @@ export function isReverseAssembledPose(anim: ScrollViewAnim): boolean {
   );
 }
 
-/** Opacity for the moving slices while the reverse close crossfades. */
-export function getReverseExplodedOpacity(anim: ScrollViewAnim): number {
-  const span = REVERSE_CROSSFADE_START - REVERSE_ASSEMBLED_OPEN_AMOUNT;
-  return clamp01((anim.openAmount - REVERSE_ASSEMBLED_OPEN_AMOUNT) / span);
+/**
+ * Fade the cropped exploded layers out immediately after reverse begins.
+ * Their rectangular crop bounds are useful while opening, but become visible
+ * seams while closing. The intact PNG then owns the rest of the return motion.
+ */
+export function getReverseExplodedOpacity(
+  progress: number,
+  peak: number,
+  closeEnd: number = REVERSE_CLOSE_END_DESKTOP,
+): number {
+  const closeAmount = getReverseCloseAmount(progress, peak, closeEnd);
+  return 1 - easeOutCubic(clamp01(closeAmount / REVERSE_LAYER_HANDOFF));
 }
 
 /** Assembled start pose — reverse playback must land here, not a mid-explode. */

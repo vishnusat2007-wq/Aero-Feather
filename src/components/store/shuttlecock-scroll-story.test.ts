@@ -114,17 +114,18 @@ describe("reverse close returns to the assembled start pose", () => {
     assert.ok(anim.bindingLift < 8);
   });
 
-  it("crossfades the moving slices before unmounting them on reverse", () => {
-    const visible = pose(0.6, 1);
-    const fading = pose(0.4, 1);
-    const assembled = pose(0.15, 1);
+  it("hands reverse closing to the intact PNG before crop edges can poke through", () => {
+    const justReversed = 0.98;
+    const fading = 0.97;
+    const handedOff = 0.9;
 
-    assert.equal(getReverseExplodedOpacity(visible), 1);
-    assert.ok(getReverseExplodedOpacity(fading) > 0);
-    assert.ok(getReverseExplodedOpacity(fading) < 1);
-    assert.equal(getReverseExplodedOpacity(assembled), 0);
-    assert.equal(false, isReverseAssembledPose(fading));
-    assert.equal(true, isReverseAssembledPose(assembled));
+    assert.ok(getReverseExplodedOpacity(justReversed, 1, REVERSE_CLOSE_END_MOBILE) > 0);
+    assert.ok(getReverseExplodedOpacity(justReversed, 1, REVERSE_CLOSE_END_MOBILE) < 1);
+    assert.ok(getReverseExplodedOpacity(fading, 1, REVERSE_CLOSE_END_MOBILE) > 0);
+    assert.ok(getReverseExplodedOpacity(fading, 1, REVERSE_CLOSE_END_MOBILE) < 1);
+    assert.equal(getReverseExplodedOpacity(handedOff, 1, REVERSE_CLOSE_END_MOBILE), 0);
+    assert.equal(false, isReverseAssembledPose(pose(handedOff, 1)));
+    assert.equal(true, isReverseAssembledPose(pose(0.15, 1)));
   });
 });
 

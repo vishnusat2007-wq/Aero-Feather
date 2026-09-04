@@ -175,8 +175,12 @@ export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Pr
   const reversing = !reducedMotion && effectiveProgress + 0.001 < scrub.peak;
   const reverseAssembled = isReverseAssembledPose(anim);
   const closed = reversing ? reverseAssembled : isAssembledPose(anim);
-  const showExploded = reversing ? !reverseAssembled : shouldShowExplodedLayers(anim);
-  const explodedOpacity = reversing ? getReverseExplodedOpacity(anim) : 1;
+  const explodedOpacity = reversing
+    ? getReverseExplodedOpacity(effectiveProgress, scrub.peak, closeEnd)
+    : 1;
+  const showExploded = reversing
+    ? explodedOpacity > 0.01
+    : shouldShowExplodedLayers(anim);
   const assembledOpacity = reversing
     ? 1 - explodedOpacity
     : showExploded
