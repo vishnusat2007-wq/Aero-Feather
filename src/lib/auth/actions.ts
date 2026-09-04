@@ -5,6 +5,12 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { ensureUserProfile } from "@/lib/auth/profile";
+import {
+  validateNewPassword,
+  type PasswordFormState,
+} from "@/lib/auth/password";
+
+export type { PasswordFormState } from "@/lib/auth/password";
 
 export type AuthFormState = {
   error?: string;
@@ -142,26 +148,31 @@ export async function updateProfileAction(formData: FormData) {
   revalidatePath("/admin/profile");
 }
 
-export async function updatePasswordAction(formData: FormData) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+export async function updatePasswordAction(
+  _prevState: PasswordFormState,
+  formData: FormData,
+): Promise<PasswordFormState> {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-  if (!user) throw new Error("Not signed in");
+    if (!user) return { error: "Not signed in" };
 
-  const password = formData.get("password")?.toString() ?? "";
-  const confirm = formData.get("confirm_password")?.toString() ?? "";
+    const password = formData.get("password")?.toString() ?? "";
+    const confirm = formData.get("confirm_password")?.toString() ?? "";
+    const invalid = validateNewPassword(password, confirm);
+    if (invalid) return { error: invalid };
 
-  if (password.length < 6) {
-    throw new Error("Password must be at least 6 characters");
+    const { error } = await supabase.auth.updateUser({ password });
+    if (error) return { error: error.message };
+
+    return { success: true };
+  } catch {
+    // Never throw — production sanitizes Server Action throws as React #441.
+    return { error: "Could not update password" };
   }
-  if (password !== confirm) {
-    throw new Error("Passwords do not match");
-  }
-
-  const { error } = await supabase.auth.updateUser({ password });
-  if (error) throw new Error(error.message);
 }
 
 export async function syncProfileAfterAuth(userId: string) {
