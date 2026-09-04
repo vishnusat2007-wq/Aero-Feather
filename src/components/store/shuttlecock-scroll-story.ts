@@ -61,13 +61,16 @@ const CHAPTER_BOUNDS = [0, 0.08, 0.26, 0.44, 0.62, 1] as const;
 export const CLOSED_PROGRESS = CHAPTER_BOUNDS[1];
 
 /**
- * Reverse close finishes over this fraction of the track so phones do not have
- * to rewind every opening chapter. Forward choreography is unchanged.
+ * Reverse must land on the assembled start pose by this progress — near the
+ * intro, not 30% after the peak. A short close-span left most of the rewind
+ * sitting on closedAnim(), so a 0.003 Android jitter flipped direction and
+ * exploded chapter 3 under the PNG.
+ *
+ * Mobile finishes slightly sooner than desktop; the shorter 300svh track is
+ * the rest of the phone snap. Opening keyframes are unchanged.
  */
-export const REVERSE_CLOSE_SPAN_MOBILE = 0.32;
-export const REVERSE_CLOSE_SPAN_DESKTOP = 0.42;
-
-export type ScrollDirection = "forward" | "reverse";
+export const REVERSE_CLOSE_END_MOBILE = 0.12;
+export const REVERSE_CLOSE_END_DESKTOP = CLOSED_PROGRESS;
 
 function clamp01(v: number) {
   return Math.max(0, Math.min(1, v));
@@ -150,9 +153,20 @@ export function isFullyClosed(progress: number): boolean {
   return clamp01(progress) < CHAPTER_BOUNDS[1];
 }
 
+/**
+ * Assembled PNG is fully opaque at openAmount 0.12. Treat that as visually
+ * closed so exploded cork/feather/binding slices never sit under the PNG.
+ */
+export const ASSEMBLED_OPEN_AMOUNT = 0.12;
+
 /** True when the pose matches the first-segment assembled shuttle. */
 export function isAssembledPose(anim: ScrollViewAnim): boolean {
-  return anim.openAmount <= 0.001 && anim.featherLift <= 0.35 && anim.bindingLift <= 0.35;
+  return anim.openAmount <= ASSEMBLED_OPEN_AMOUNT;
+}
+
+/** Exploded crops only while the peel is actually open. */
+export function shouldShowExplodedLayers(anim: ScrollViewAnim): boolean {
+  return anim.openAmount > ASSEMBLED_OPEN_AMOUNT;
 }
 
 /** Assembled start pose — reverse playback must land here, not a mid-explode. */
@@ -173,18 +187,34 @@ function closedAnim(): ScrollViewAnim {
   };
 }
 
-/** 0 at the reverse turnaround, 1 once the assembled pose must be on screen. */
+/**
+ * 0 at the reverse turnaround, 1 once progress has reached closeEnd.
+ * Span is (peak − closeEnd) so close finishes at the start pose, not mid-track.
+ */
 export function getReverseCloseAmount(
   progress: number,
   peak: number,
-  closeSpan: number = REVERSE_CLOSE_SPAN_DESKTOP,
+  closeEnd: number = REVERSE_CLOSE_END_DESKTOP,
 ): number {
   const p = clamp01(progress);
   const crest = clamp01(peak);
-  if (p <= 0 || crest <= 0) return 1;
+  const end = clamp01(closeEnd);
+  if (p <= end || crest <= end) return 1;
   if (p >= crest) return 0;
-  const span = Math.max(CHAPTER_BOUNDS[1], Math.min(crest, closeSpan));
-  return clamp01((crest - p) / span);
+  return clamp01((crest - p) / (crest - end));
+}
+
+export type ScrubState = {
+  progress: number;
+  peak: number;
+};
+
+/** High-water peak since the last full close. Never lowered on reverse. */
+export function advanceScrub(prev: ScrubState, raw: number, snapClosed = 0): ScrubState {
+  let progress = clamp01(raw);
+  if (progress <= snapClosed) progress = 0;
+  if (progress <= 0) return { progress: 0, peak: 0 };
+  return { progress, peak: Math.max(prev.peak, progress) };
 }
 
 function blendToClosed(from: ScrollViewAnim, amount: number): ScrollViewAnim {
@@ -209,9 +239,8 @@ function blendToClosed(from: ScrollViewAnim, amount: number): ScrollViewAnim {
 }
 
 export type ScrollPlayback = {
-  direction?: ScrollDirection;
   peak?: number;
-  closeSpan?: number;
+  closeEnd?: number;
 };
 
 /** Lift values in px — tuned for ~400px-wide stage */
@@ -292,17 +321,17 @@ export function getForwardAnim(progress: number): ScrollViewAnim {
 }
 
 /**
- * Forward uses the opening story. Reverse blends the turnaround pose back to
- * the assembled start — chapter 4 never reaches closed on its own.
+ * Pose is a function of (progress, peak) — not a noisy scroll direction flag.
+ * Climbing or at the crest uses the opening story unchanged. Below the peak,
+ * blend that crest pose back to assembled. Chapter 4 never reaches closed on
+ * its own, but a 0.003 direction flip must not jump to an exploded chapter.
  */
 export function getScrollAnim(progress: number, playback: ScrollPlayback = {}): ScrollViewAnim {
   const p = clamp01(progress);
-  if (playback.direction === "reverse") {
-    const peak = clamp01(playback.peak ?? p);
-    const closeAmount = getReverseCloseAmount(p, peak, playback.closeSpan);
-    if (closeAmount >= 1 || isFullyClosed(p)) return closedAnim();
-    return blendToClosed(getForwardAnim(peak), closeAmount);
-  }
-  if (isFullyClosed(p)) return closedAnim();
-  return getForwardAnim(p);
+  const peak = clamp01(playback.peak ?? p);
+  if (p <= 0 || isFullyClosed(p)) return closedAnim();
+  if (p >= peak) return getForwardAnim(p);
+  const closeAmount = getReverseCloseAmount(p, peak, playback.closeEnd);
+  if (closeAmount >= 1) return closedAnim();
+  return blendToClosed(getForwardAnim(peak), closeAmount);
 }

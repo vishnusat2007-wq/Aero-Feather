@@ -6,7 +6,8 @@
     "dev": "node scripts/next-dev.mjs",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "node --experimental-strip-types --test src/components/store/shuttlecock-scroll-story.test.ts"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.23",

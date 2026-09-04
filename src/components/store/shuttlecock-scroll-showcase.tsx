@@ -6,13 +6,14 @@ import { cn } from "@/lib/utils";
 import {
   CHAPTERS,
   CLOSED_PROGRESS,
-  REVERSE_CLOSE_SPAN_DESKTOP,
-  REVERSE_CLOSE_SPAN_MOBILE,
+  REVERSE_CLOSE_END_DESKTOP,
+  REVERSE_CLOSE_END_MOBILE,
+  advanceScrub,
   getScrollAnim,
   HIGHLIGHT_ZONES,
   isAssembledPose,
+  shouldShowExplodedLayers,
   type HeroStage,
-  type ScrollDirection,
 } from "@/components/store/shuttlecock-scroll-story";
 
 export type { HeroStage };
@@ -31,16 +32,16 @@ function getReducedMotionSnapshot() {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
-function subscribeDesktopCloseSpan(cb: () => void) {
+function subscribeDesktopCloseEnd(cb: () => void) {
   const mq = window.matchMedia("(min-width: 1024px)");
   mq.addEventListener("change", cb);
   return () => mq.removeEventListener("change", cb);
 }
 
-function getDesktopCloseSpanSnapshot() {
+function getDesktopCloseEndSnapshot() {
   return window.matchMedia("(min-width: 1024px)").matches
-    ? REVERSE_CLOSE_SPAN_DESKTOP
-    : REVERSE_CLOSE_SPAN_MOBILE;
+    ? REVERSE_CLOSE_END_DESKTOP
+    : REVERSE_CLOSE_END_MOBILE;
 }
 
 type Props = {
@@ -64,13 +65,7 @@ function ShuttleImage({ className, style }: { className?: string; style?: React.
   );
 }
 
-type Scrub = {
-  progress: number;
-  direction: ScrollDirection;
-  peak: number;
-};
-
-const INITIAL_SCRUB: Scrub = { progress: 0, direction: "forward", peak: 0 };
+const INITIAL_SCRUB = { progress: 0, peak: 0 };
 
 function readTrackProgress(el: HTMLElement): number {
   const rect = el.getBoundingClientRect();
@@ -84,8 +79,7 @@ export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Pr
   const trackRef = useRef<HTMLDivElement>(null);
   const lastRawRef = useRef(0);
   const peakRef = useRef(0);
-  const directionRef = useRef<ScrollDirection>("forward");
-  const [scrub, setScrub] = useState<Scrub>(INITIAL_SCRUB);
+  const [scrub, setScrub] = useState(INITIAL_SCRUB);
   const reducedMotion = useSyncExternalStore(
     subscribeReducedMotion,
     getReducedMotionSnapshot,
@@ -94,34 +88,23 @@ export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Pr
 
   const applyProgress = useCallback((raw: number, settled: boolean) => {
     const startSlackPx = settled
-      ? Math.max(140, window.innerHeight * 0.2)
-      : Math.max(64, window.innerHeight * 0.08);
+      ? Math.max(100, window.innerHeight * 0.12)
+      : Math.max(48, window.innerHeight * 0.06);
     const el = trackRef.current;
     const nearStart = el ? el.getBoundingClientRect().top > -startSlackPx : raw <= 0;
-    const snapClosed = settled ? CLOSED_PROGRESS : 0.03;
-    const snapOpen = settled ? 0.02 : 0.015;
+    const snapClosed = settled ? CLOSED_PROGRESS : 0.02;
 
     let progress = Math.max(0, Math.min(1, raw));
     if (nearStart || raw <= snapClosed) progress = 0;
-    else if (raw >= 1 - snapOpen) progress = 1;
+    else if (raw >= 0.985) progress = 1;
 
-    const prev = lastRawRef.current;
-    let direction = directionRef.current;
-    let peak = peakRef.current;
-    if (progress <= 0) {
-      direction = "forward";
-      peak = 0;
-    } else if (progress > prev + 0.003) {
-      direction = "forward";
-      peak = progress;
-    } else if (progress < prev - 0.003) {
-      direction = "reverse";
-    }
-
-    lastRawRef.current = progress;
-    peakRef.current = peak;
-    directionRef.current = direction;
-    setScrub({ progress, direction, peak });
+    const next = advanceScrub(
+      { progress: lastRawRef.current, peak: peakRef.current },
+      progress,
+    );
+    lastRawRef.current = next.progress;
+    peakRef.current = next.peak;
+    setScrub(next);
   }, []);
 
   const updateProgress = useCallback(
@@ -150,36 +133,31 @@ export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Pr
     };
     updateProgress(true);
     window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onSettle);
+    window.addEventListener("resize", onScroll);
     window.addEventListener("touchend", onSettle, { passive: true });
     window.addEventListener("pointerup", onSettle, { passive: true });
     window.addEventListener("scrollend", onSettle);
-    const vv = window.visualViewport;
-    vv?.addEventListener("resize", onSettle);
     return () => {
       if (raf) cancelAnimationFrame(raf);
       document.documentElement.classList.remove("af-hero-scrolling");
       window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onSettle);
+      window.removeEventListener("resize", onScroll);
       window.removeEventListener("touchend", onSettle);
       window.removeEventListener("pointerup", onSettle);
       window.removeEventListener("scrollend", onSettle);
-      vv?.removeEventListener("resize", onSettle);
     };
   }, [updateProgress]);
 
-  const closeSpan = useSyncExternalStore(
-    subscribeDesktopCloseSpan,
-    getDesktopCloseSpanSnapshot,
-    () => REVERSE_CLOSE_SPAN_DESKTOP,
+  const closeEnd = useSyncExternalStore(
+    subscribeDesktopCloseEnd,
+    getDesktopCloseEndSnapshot,
+    () => REVERSE_CLOSE_END_DESKTOP,
   );
 
   const effectiveProgress = reducedMotion ? 0.42 : scrub.progress;
   const anim = getScrollAnim(
     effectiveProgress,
-    reducedMotion
-      ? undefined
-      : { direction: scrub.direction, peak: scrub.peak, closeSpan },
+    reducedMotion ? undefined : { peak: scrub.peak, closeEnd },
   );
   const chapterIdx = anim.chapter;
   const chapterLocal = anim.local;
@@ -193,7 +171,8 @@ export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Pr
 
   const featherScale = 1 + anim.featherSpread;
   const closed = isAssembledPose(anim);
-  const gapVisible = !closed && anim.openAmount > 0.08;
+  const showExploded = shouldShowExplodedLayers(anim);
+  const gapVisible = showExploded && anim.openAmount > 0.08;
 
   return (
     <div
@@ -203,6 +182,9 @@ export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Pr
       data-open-amount={anim.openAmount.toFixed(3)}
       data-feather-lift={anim.featherLift.toFixed(1)}
       data-binding-lift={anim.bindingLift.toFixed(1)}
+      data-progress={effectiveProgress.toFixed(3)}
+      data-peak={scrub.peak.toFixed(3)}
+      data-exploded={showExploded ? "true" : "false"}
     >
       <div className="sticky top-0 grid h-[100svh] grid-rows-[1fr_auto] overflow-hidden pt-16 lg:overflow-visible lg:pt-4">
         {/* Shuttle stage — centred, kept clear of text zones */}
@@ -246,9 +228,9 @@ export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Pr
                     : "min(58vh, 520px)",
               }}
             >
-              {/* Exploded slices unmount when assembled so a phone crop cannot
-                  leave a leftover cork / feather / binding ghost. */}
-              {!closed && (
+              {/* Exploded slices stay unmounted whenever the assembled PNG owns
+                  the frame — leftover cork/feather crops cannot sit underneath. */}
+              {showExploded && (
               <>
               {gapVisible && anim.featherLift > 8 && (
                 <div
@@ -332,7 +314,7 @@ export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Pr
                   height: "12%",
                   transform: `translateY(-${anim.bindingLift}px) translateZ(${anim.bindingLift}px)`,
                   transformStyle: "preserve-3d",
-                  opacity: closed || anim.openAmount <= 0.12 ? 0 : 1,
+                  opacity: 1,
                 }}
               >
                 <div className="absolute inset-x-[-10%] top-[-340%] h-[1600%]">
@@ -352,7 +334,7 @@ export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Pr
                 className="absolute inset-x-0 top-0 z-30 overflow-visible"
                 style={{
                   height: "44%",
-                  opacity: closed || anim.openAmount <= 0.12 ? 0 : 1,
+                  opacity: 1,
                   transform: `
                     translateY(-${anim.featherLift}px)
                     translateZ(${anim.featherLift * 1.2}px)
@@ -382,11 +364,9 @@ export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Pr
               <div
                 className="pointer-events-none absolute inset-0 z-40"
                 style={{
-                  opacity: closed
-                    ? 1
-                    : anim.openAmount < 0.12
-                      ? 1
-                      : Math.max(0, 1 - (anim.openAmount - 0.12) * 8),
+                  opacity: showExploded
+                    ? Math.max(0, 1 - (anim.openAmount - 0.12) * 8)
+                    : 1,
                 }}
               >
                 <Image
@@ -400,7 +380,7 @@ export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Pr
               </div>
 
               {/* Soft focus glow — never a boxed bar across the feathers */}
-              {highlight && highlight !== "intro" && !closed && anim.openAmount > 0.12 && (
+              {highlight && highlight !== "intro" && showExploded && (
                 <div
                   className="pointer-events-none absolute z-50 rounded-[40%] border border-af-cyan/50"
                   style={{
@@ -422,7 +402,7 @@ export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Pr
               )}
 
               {/* Geometry arcs */}
-              {!closed && highlight === "geometry" && (
+              {showExploded && highlight === "geometry" && (
                 <svg
                   className="pointer-events-none absolute inset-0 z-[45] h-full w-full overflow-visible"
                   style={{
