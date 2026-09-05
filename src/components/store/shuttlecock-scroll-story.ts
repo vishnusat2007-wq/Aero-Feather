@@ -59,13 +59,13 @@ export const CHAPTERS: ChapterInfo[] = [
  * after a short intro hold. The final part (cork) window runs to the end, where
  * a short re-close tail reassembles the shuttle so the section exits cleanly.
  */
-export const CHAPTER_BOUNDS = [0, 0.08, 0.28, 0.48, 0.68, 1] as const;
+export const CHAPTER_BOUNDS = [0, 0.08, 0.28, 0.46, 0.64, 1] as const;
 
 /** Intro hold — the shuttle is assembled and no part has lifted yet. */
 export const CLOSED_PROGRESS = CHAPTER_BOUNDS[1];
 
 /** Past this progress the shuttle reassembles so scrolling out is clean. */
-export const RECLOSE_START = 0.9;
+export const RECLOSE_START = 0.86;
 
 /**
  * The assembled PNG is fully opaque at/under this openAmount. Treat that as
@@ -200,7 +200,6 @@ export function getScrollAnim(progress: number): ScrollViewAnim {
   const p = clamp01(progress);
   if (p <= 0 || isFullyClosed(p)) return closedAnim();
 
-  const chapter = getChapterIndex(p);
   const local = getChapterProgress(p);
 
   // Global assembly multiplier: 1 while the story plays, ramping back to 0 over
@@ -208,8 +207,8 @@ export function getScrollAnim(progress: number): ScrollViewAnim {
   const assembly = 1 - ramp(p, RECLOSE_START, 1);
 
   const feather = ramp(p, 0.08, 0.3) * assembly;
-  const binding = ramp(p, 0.48, 0.68) * assembly;
-  const cork = ramp(p, 0.66, 0.9) * assembly;
+  const binding = ramp(p, 0.46, 0.64) * assembly;
+  const cork = ramp(p, 0.62, 0.84) * assembly;
 
   const featherLift = feather * 104;
   const featherSpread = feather * 0.2;
@@ -217,11 +216,16 @@ export function getScrollAnim(progress: number): ScrollViewAnim {
   const corkGlow = cork;
   const openAmount = Math.max(feather, binding * 0.9, cork * 0.75);
 
-  const spread = ramp(p, 0.08, 0.9) * assembly;
+  // Once the re-close tail has folded every part back into the assembled PNG,
+  // show the whole shuttle again (01) rather than a stale part number.
+  const reassembledEnd = openAmount <= ASSEMBLED_OPEN_AMOUNT && p > 0.5;
+  const chapter = reassembledEnd ? 0 : getChapterIndex(p);
+
+  const spread = ramp(p, 0.08, RECLOSE_START) * assembly;
   const focusScale = 1 + 0.07 * spread;
   const focusY = lerp(0, 30, spread);
   const tiltY = lerp(-2, 3, spread);
-  const tiltX = -1 + Math.sin(clamp01(p) * Math.PI) * 1.5;
+  const tiltX = -1 + Math.sin(p * Math.PI) * 1.5;
 
   const highlight: ScrollChapter | null =
     chapter === 0 || assembly < 0.4 ? null : CHAPTERS[chapter].id;

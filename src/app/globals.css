@@ -105,10 +105,6 @@ html.light {
 /* Prefer instant scrolling so the hero scrub stays in sync; anchors still jump cleanly */
 html {
   scroll-behavior: auto;
-  /* Gentle snap: only the hero's per-part markers carry scroll-snap-align, so
-     the shuttle settles on each of its five parts. Proximity (not mandatory)
-     keeps the rest of the page — and reverse scrolling — completely free. */
-  scroll-snap-type: y proximity;
 }
 
 body {

@@ -87,6 +87,18 @@ describe("reveal then re-close", () => {
     assert.ok(getScrollAnim(RECLOSE_START + 0.06).openAmount < getScrollAnim(RECLOSE_START).openAmount);
   });
 
+  it("still shows the cork part (05) before the re-close tail", () => {
+    const corkStage = getScrollAnim(0.72);
+    assert.equal(corkStage.chapter, 4);
+    assert.equal(true, shouldShowExplodedLayers(corkStage));
+  });
+
+  it("returns the label to the whole shuttle (01) once reassembled at the end", () => {
+    const end = getScrollAnim(0.98);
+    assert.equal(end.chapter, 0);
+    assert.equal(true, isAssembledPose(end));
+  });
+
   it("lifts feathers before binding before cork", () => {
     const feathersStage = getScrollAnim(0.2);
     const bindingStage = getScrollAnim(0.58);
