@@ -82,16 +82,6 @@ function easeOutCubic(t: number) {
   return 1 - Math.pow(1 - t, 3);
 }
 
-function easeInOutCubic(t: number) {
-  return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-}
-
-/** Eased 0→1 ramp across a progress window, clamped outside it. */
-function ramp(p: number, start: number, end: number) {
-  if (end <= start) return p >= end ? 1 : 0;
-  return easeInOutCubic(clamp01((p - start) / (end - start)));
-}
-
 export function getChapterIndex(progress: number): number {
   const p = clamp01(progress);
   if (p < CHAPTER_BOUNDS[1]) return 0;
@@ -187,15 +177,14 @@ export function getAssembledOpacity(anim: ScrollViewAnim): number {
  *
  * Choreography across 0→1:
  *   0.00–0.08  assembled hold (chapter 01 · FLIGHT)
- *   0.08–0.28  feathers lift + bloom (02 · FEATHER)
- *   0.28–0.48  feather geometry arcs (03 · GEOMETRY)
- *   0.48–0.70  binding lifts (04 · DURABILITY)
- *   0.70–1.00  cork keeps separating + glows (05 · CONTROL)
+ *   0.08–1.00  a single monotonic "open" parameter drives every part at once
  *
- * Every part keeps moving right up to the end — the cork separates all the way
- * to progress 1 — so no scroll range is ever frozen (nothing feels "stuck").
- * There is no re-close tail: the reveal ends fully separated so scrolling back
- * up simply reassembles the shuttle 05→01 in one smooth, monotonic motion.
+ * The key to smoothness in both directions: all three parts are continuous
+ * functions of ONE open value (0→1 across the reveal). Different power curves
+ * make the feathers lead, the binding follow and the cork trail — the staggered
+ * look — but because every part moves whenever `open` moves, no scroll range is
+ * ever frozen and reverse scrolling reassembles the shuttle in one continuous
+ * motion. There is no re-close tail; the reveal simply ends fully separated.
  */
 export function getScrollAnim(progress: number): ScrollViewAnim {
   const p = clamp01(progress);
@@ -204,20 +193,22 @@ export function getScrollAnim(progress: number): ScrollViewAnim {
   const local = getChapterProgress(p);
   const chapter = getChapterIndex(p);
 
-  const feather = ramp(p, 0.08, 0.32);
-  const binding = ramp(p, 0.48, 0.72);
-  const cork = ramp(p, 0.68, 1);
+  // One continuous open parameter; staggered via power curves so the feathers
+  // lead and the cork trails, yet all move together on every scroll frame.
+  const open = clamp01((p - CLOSED_PROGRESS) / (1 - CLOSED_PROGRESS));
+  const feather = Math.pow(open, 0.7);
+  const binding = Math.pow(open, 1.5);
+  const cork = Math.pow(open, 2.3);
 
-  const featherLift = feather * 104;
-  const featherSpread = feather * 0.2;
-  const bindingLift = binding * 86;
+  const featherLift = feather * 110;
+  const featherSpread = feather * 0.22;
+  const bindingLift = binding * 88;
   const corkGlow = cork;
-  const openAmount = Math.max(feather, binding * 0.9, cork * 0.75);
+  const openAmount = feather;
 
-  const spread = ramp(p, 0.08, 0.95);
-  const focusScale = 1 + 0.07 * spread;
-  const focusY = lerp(0, 30, spread);
-  const tiltY = lerp(-2, 3, spread);
+  const focusScale = 1 + 0.07 * open;
+  const focusY = lerp(0, 30, open);
+  const tiltY = lerp(-2, 3, open);
   const tiltX = -1 + Math.sin(p * Math.PI) * 1.5;
 
   const highlight: ScrollChapter | null =

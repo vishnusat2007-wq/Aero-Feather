@@ -93,12 +93,27 @@ describe("progressive reveal", () => {
     assert.equal(true, shouldShowExplodedLayers(corkStage));
   });
 
-  it("lifts feathers before binding before cork", () => {
-    const feathersStage = getScrollAnim(0.2);
-    const bindingStage = getScrollAnim(0.58);
-    assert.ok(feathersStage.featherLift > 0);
-    assert.ok(feathersStage.bindingLift === 0);
-    assert.ok(bindingStage.bindingLift > 0);
+  it("staggers the parts — feathers lead, cork trails — but all move together", () => {
+    // Early on, feathers are already well ahead of the trailing cork.
+    const early = getScrollAnim(0.2);
+    assert.ok(early.featherLift > 0);
+    assert.ok(early.featherSpread > early.corkGlow);
+    // Everything is fully separated by the end.
+    const end = getScrollAnim(1);
+    assert.ok(end.featherLift > 0);
+    assert.ok(end.bindingLift > 0);
+    assert.ok(end.corkGlow > 0);
+  });
+
+  it("moves every part continuously (no frozen scroll range)", () => {
+    let prev = getScrollAnim(0.14);
+    for (let p = 0.16; p <= 1.0001; p += 0.04) {
+      const cur = getScrollAnim(p);
+      // openAmount is strictly increasing across the reveal, so the shuttle is
+      // never visually frozen while scrolling — the cause of the old snap.
+      assert.ok(cur.openAmount > prev.openAmount, `frozen at p=${p.toFixed(2)}`);
+      prev = cur;
+    }
   });
 
   it("never reports exploded slices once the assembled PNG is opaque", () => {
