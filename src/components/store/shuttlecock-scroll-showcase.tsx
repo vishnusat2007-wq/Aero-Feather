@@ -68,6 +68,8 @@ export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Pr
   const trackRef = useRef<HTMLDivElement>(null);
   const viewportLockRef = useRef(0);
   const rafRef = useRef(0);
+  const targetRef = useRef(0);
+  const displayedRef = useRef(0);
   const [progress, setProgress] = useState(0);
   const reducedMotion = useSyncExternalStore(
     subscribeReducedMotion,
@@ -79,11 +81,12 @@ export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Pr
     const el = trackRef.current;
     if (!el) return;
 
-    // Pose is a pure function of scroll position: sample the track box each
-    // frame and hand the raw 0→1 progress straight to the renderer. No peak,
-    // direction or close-lock state — reverse scrolling is just the same curve
-    // read backwards, so it can never "fight" the scrollbar.
-    const sample = () => {
+    // The target pose is a pure function of scroll position, so reverse is just
+    // the same curve read backwards and can never "fight" the scrollbar. The
+    // *displayed* progress then eases toward that target each frame: a fast or
+    // coarse scroll glides smoothly through every part instead of snapping, and
+    // it never overshoots or plays against the scroll direction.
+    const readTarget = () => {
       const measured = measureStickyPaneHeight(el);
       if (
         viewportLockRef.current < 8 ||
@@ -92,24 +95,36 @@ export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Pr
         viewportLockRef.current = measured;
       }
       const rect = el.getBoundingClientRect();
-      const raw = readHeroTrack({
+      targetRef.current = readHeroTrack({
         trackTop: rect.top,
         trackHeight: el.offsetHeight,
         viewportHeight: viewportLockRef.current,
       });
-      setProgress(raw);
+    };
+
+    const tick = () => {
+      const target = targetRef.current;
+      const diff = target - displayedRef.current;
+      const next = Math.abs(diff) < 0.0006 ? target : displayedRef.current + diff * 0.2;
+      displayedRef.current = next;
+      setProgress(next);
+      if (next === target) {
+        rafRef.current = 0;
+        document.documentElement.classList.remove("af-hero-scrolling");
+      } else {
+        rafRef.current = requestAnimationFrame(tick);
+      }
     };
 
     const onScroll = () => {
       document.documentElement.classList.add("af-hero-scrolling");
-      if (rafRef.current) return;
-      rafRef.current = requestAnimationFrame(() => {
-        rafRef.current = 0;
-        sample();
-      });
+      readTarget();
+      if (!rafRef.current) rafRef.current = requestAnimationFrame(tick);
     };
 
-    sample();
+    readTarget();
+    displayedRef.current = targetRef.current;
+    setProgress(targetRef.current);
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", onScroll);
     const visualViewport = window.visualViewport;
@@ -146,7 +161,7 @@ export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Pr
   return (
     <div
       ref={trackRef}
-      className="relative h-[240svh] lg:h-[220vh]"
+      className="relative h-[210svh] lg:h-[190vh]"
       data-shuttle-closed={closed ? "true" : "false"}
       data-open-amount={anim.openAmount.toFixed(3)}
       data-feather-lift={anim.featherLift.toFixed(1)}
