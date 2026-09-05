@@ -5,12 +5,13 @@ import {
   advanceScrub,
   applyHeroScrub,
   getForwardAnim,
+  getAssembledOpacity,
   getReverseExplodedOpacity,
   getReverseCloseAmount,
   getScrollAnim,
   isAssembledPose,
   isFullyClosed,
-  isReverseAssembledPose,
+  isReversingPlayback,
   readHeroTrack,
   shouldShowExplodedLayers,
 } from "./shuttlecock-scroll-story.ts";
@@ -116,18 +117,36 @@ describe("reverse close returns to the assembled start pose", () => {
     assert.ok(anim.bindingLift < 8);
   });
 
-  it("hands reverse closing to the intact PNG before crop edges can poke through", () => {
-    const justReversed = 0.98;
-    const fading = 0.97;
-    const handedOff = 0.9;
+  it("unmounts exploded crops and rings on the first reverse frame", () => {
+    const crest = getReverseExplodedOpacity(1, 1, REVERSE_CLOSE_END_MOBILE);
+    assert.equal(crest, 1);
+    assert.equal(false, isReversingPlayback(1, 1));
+    assert.equal(true, shouldShowExplodedLayers(getForwardAnim(1), false));
 
-    assert.ok(getReverseExplodedOpacity(justReversed, 1, REVERSE_CLOSE_END_MOBILE) > 0);
-    assert.ok(getReverseExplodedOpacity(justReversed, 1, REVERSE_CLOSE_END_MOBILE) < 1);
-    assert.ok(getReverseExplodedOpacity(fading, 1, REVERSE_CLOSE_END_MOBILE) > 0);
-    assert.ok(getReverseExplodedOpacity(fading, 1, REVERSE_CLOSE_END_MOBILE) < 1);
-    assert.equal(getReverseExplodedOpacity(handedOff, 1, REVERSE_CLOSE_END_MOBILE), 0);
-    assert.equal(false, isReverseAssembledPose(pose(handedOff, 1)));
-    assert.equal(true, isReverseAssembledPose(pose(0.15, 1)));
+    for (const p of [0.999, 0.98, 0.9, 0.7, 0.5, 0.3]) {
+      const anim = pose(p, 1);
+      assert.equal(true, isReversingPlayback(p, 1), `p=${p} should be reversing`);
+      assert.equal(
+        0,
+        getReverseExplodedOpacity(p, 1, REVERSE_CLOSE_END_MOBILE),
+        `exploded opacity still up at p=${p}`,
+      );
+      assert.equal(
+        false,
+        shouldShowExplodedLayers(anim, true),
+        `mid-close still showing slices at p=${p} open=${anim.openAmount}`,
+      );
+      assert.equal(1, getAssembledOpacity(anim, true));
+    }
+  });
+
+  it("keeps exploded layers while opening (unchanged choreography)", () => {
+    for (const p of [0.2, 0.4, 0.62, 0.8, 1]) {
+      const anim = getForwardAnim(p);
+      assert.equal(false, isReversingPlayback(p, p));
+      assert.equal(true, shouldShowExplodedLayers(anim, false));
+      assert.ok(getAssembledOpacity(anim, false) < 1);
+    }
   });
 });
 

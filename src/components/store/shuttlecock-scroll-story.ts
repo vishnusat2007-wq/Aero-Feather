@@ -159,12 +159,6 @@ export function isFullyClosed(progress: number): boolean {
  */
 export const ASSEMBLED_OPEN_AMOUNT = 0.12;
 
-/**
- * During reverse playback, fade the moving slices away only as they physically
- * meet the assembled image. This removes the last-frame pop without changing
- * any of the forward/opening keyframes.
- */
-export const REVERSE_LAYER_HANDOFF = 0.06;
 export const REVERSE_ASSEMBLED_OPEN_AMOUNT = 0.015;
 
 /** True when the pose matches the first-segment assembled shuttle. */
@@ -172,8 +166,21 @@ export function isAssembledPose(anim: ScrollViewAnim): boolean {
   return anim.openAmount <= ASSEMBLED_OPEN_AMOUNT;
 }
 
-/** Exploded crops only while the peel is actually open. */
-export function shouldShowExplodedLayers(anim: ScrollViewAnim): boolean {
+export function isReversingPlayback(progress: number, peak: number): boolean {
+  return clamp01(progress) < clamp01(peak);
+}
+
+/**
+ * Exploded cork/feather/binding crops and highlight rings.
+ * Opening (reversing=false) still peels by openAmount. The instant reverse
+ * starts, hide every cropped slice — a 6% crossfade left ghost duplicates
+ * under the assembled PNG for the first stretch of close.
+ */
+export function shouldShowExplodedLayers(
+  anim: ScrollViewAnim,
+  reversing = false,
+): boolean {
+  if (reversing) return false;
   return anim.openAmount > ASSEMBLED_OPEN_AMOUNT;
 }
 
@@ -187,18 +194,19 @@ export function isReverseAssembledPose(anim: ScrollViewAnim): boolean {
   );
 }
 
-/**
- * Fade the cropped exploded layers out immediately after reverse begins.
- * Their rectangular crop bounds are useful while opening, but become visible
- * seams while closing. The intact PNG then owns the rest of the return motion.
- */
+/** 0 as soon as reverse has begun. Opening still uses opacity 1. */
 export function getReverseExplodedOpacity(
   progress: number,
   peak: number,
   closeEnd: number = REVERSE_CLOSE_END_DESKTOP,
 ): number {
   const closeAmount = getReverseCloseAmount(progress, peak, closeEnd);
-  return 1 - easeOutCubic(clamp01(closeAmount / REVERSE_LAYER_HANDOFF));
+  return closeAmount > 0 ? 0 : 1;
+}
+
+export function getAssembledOpacity(anim: ScrollViewAnim, reversing: boolean): number {
+  if (reversing || !shouldShowExplodedLayers(anim, reversing)) return 1;
+  return Math.max(0, 1 - (anim.openAmount - ASSEMBLED_OPEN_AMOUNT) * 8);
 }
 
 /** Assembled start pose — reverse playback must land here, not a mid-explode. */
