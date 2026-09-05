@@ -11,7 +11,7 @@ import { formatPrice } from "@/lib/format";
 import { useCartStore } from "@/lib/cart-store";
 
 export default function CartPage() {
-  const { items, updateQuantity, removeItem, totalCents, clearCart } = useCartStore();
+  const { items, updateQuantity, removeItem, totalCents } = useCartStore();
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -20,17 +20,27 @@ export default function CartPage() {
     setLoading(true);
     setError(null);
     try {
+      const trimmed = email.trim();
+      if (!trimmed || !trimmed.includes("@")) {
+        throw new Error("Enter a valid email for your order confirmation.");
+      }
+
       const res = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items, email: email || undefined }),
+        body: JSON.stringify({ items, email: trimmed }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Checkout failed");
-      if (data.url) {
-        clearCart();
-        window.location.href = data.url;
+      if (!data.url) throw new Error("No Stripe checkout URL returned");
+
+      try {
+        sessionStorage.setItem("af-pending-checkout", "1");
+      } catch {
+        /* ignore */
       }
+      // Do not clear cart here — success page clears after payment.
+      window.location.href = data.url;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Checkout failed");
     } finally {
@@ -49,6 +59,9 @@ export default function CartPage() {
       </div>
     );
   }
+
+  const subtotal = totalCents();
+  const shippingHint = subtotal >= 7500 ? "Free" : "From €4.95";
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:py-16">
@@ -116,16 +129,16 @@ export default function CartPage() {
           <div className="mt-4 space-y-2 border-b border-af-cyan/10 pb-4 text-sm">
             <div className="flex justify-between">
               <span className="text-af-muted">Subtotal</span>
-              <span className="font-medium text-af-text">{formatPrice(totalCents())}</span>
+              <span className="font-medium text-af-text">{formatPrice(subtotal)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-af-muted">Shipping</span>
-              <span className="font-medium text-af-muted">At checkout</span>
+              <span className="font-medium text-af-muted">{shippingHint}</span>
             </div>
           </div>
           <div className="mt-4 flex justify-between text-lg font-bold">
             <span className="text-af-text">Total</span>
-            <span className="text-af-cyan">{formatPrice(totalCents())}</span>
+            <span className="text-af-cyan">{formatPrice(subtotal)}</span>
           </div>
 
           <div className="mt-6 space-y-2">
@@ -136,6 +149,7 @@ export default function CartPage() {
               placeholder="you@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              required
             />
           </div>
 
@@ -144,13 +158,13 @@ export default function CartPage() {
           <Button
             variant="primary"
             className="mt-6 w-full"
-            onClick={checkout}
+            onClick={() => void checkout()}
             disabled={loading}
           >
             {loading ? "Redirecting to Stripe…" : "Checkout with Stripe"}
           </Button>
           <p className="mt-3 text-center text-xs text-af-muted">
-            Secure payment powered by Stripe
+            Secure payment powered by Stripe · Aero Feather
           </p>
         </div>
       </div>

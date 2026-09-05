@@ -14,10 +14,17 @@ export async function POST(request: Request) {
 
     const body = await request.json();
     const items = body.items as CartItem[];
-    const email = body.email as string | undefined;
+    const email = typeof body.email === "string" ? body.email.trim() : "";
 
     if (!items?.length) {
       return NextResponse.json({ error: "Cart is empty" }, { status: 400 });
+    }
+
+    if (!email || !email.includes("@")) {
+      return NextResponse.json(
+        { error: "A valid email is required for Stripe Checkout." },
+        { status: 400 },
+      );
     }
 
     const supabase = await createClient();
@@ -60,7 +67,7 @@ export async function POST(request: Request) {
       .from("af_orders")
       .insert({
         user_id: user?.id ?? null,
-        email: email ?? user?.email ?? "",
+        email: email || user?.email || "",
         status: "pending",
         total_cents: totalCents,
       })
@@ -92,7 +99,7 @@ export async function POST(request: Request) {
 
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
-      customer_email: email ?? user?.email ?? undefined,
+      customer_email: email || user?.email || undefined,
       line_items: lineItems,
       success_url: `${appUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${appUrl}/cart`,
