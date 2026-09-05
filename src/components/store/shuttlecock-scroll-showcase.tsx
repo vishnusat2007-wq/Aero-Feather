@@ -161,7 +161,7 @@ export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Pr
   return (
     <div
       ref={trackRef}
-      className="relative h-[210svh] lg:h-[190vh]"
+      className="relative h-[260svh] lg:h-[240vh]"
       data-shuttle-closed={closed ? "true" : "false"}
       data-open-amount={anim.openAmount.toFixed(3)}
       data-feather-lift={anim.featherLift.toFixed(1)}

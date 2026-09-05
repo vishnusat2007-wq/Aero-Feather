@@ -59,7 +59,7 @@ export const CHAPTERS: ChapterInfo[] = [
  * after a short intro hold. The final part (cork) window runs to the end, where
  * a short re-close tail reassembles the shuttle so the section exits cleanly.
  */
-export const CHAPTER_BOUNDS = [0, 0.08, 0.28, 0.46, 0.64, 1] as const;
+export const CHAPTER_BOUNDS = [0, 0.08, 0.28, 0.48, 0.7, 1] as const;
 
 /** Intro hold — the shuttle is assembled and no part has lifted yet. */
 export const CLOSED_PROGRESS = CHAPTER_BOUNDS[1];
@@ -188,14 +188,14 @@ export function getAssembledOpacity(anim: ScrollViewAnim): number {
  * Choreography across 0→1:
  *   0.00–0.08  assembled hold (chapter 01 · FLIGHT)
  *   0.08–0.28  feathers lift + bloom (02 · FEATHER)
- *   0.28–0.46  feather geometry arcs (03 · GEOMETRY)
- *   0.46–0.64  binding lifts (04 · DURABILITY)
- *   0.64–1.00  cork separates + glows, fully exploded (05 · CONTROL)
+ *   0.28–0.48  feather geometry arcs (03 · GEOMETRY)
+ *   0.48–0.70  binding lifts (04 · DURABILITY)
+ *   0.70–1.00  cork keeps separating + glows (05 · CONTROL)
  *
- * There is no re-close tail: the reveal ends fully separated so that scrolling
- * back up simply reassembles the shuttle 05→01 in one smooth, monotonic motion.
- * Re-closing at the bottom would force a re-open the instant you scrolled back
- * into the section, which reads as a jump.
+ * Every part keeps moving right up to the end — the cork separates all the way
+ * to progress 1 — so no scroll range is ever frozen (nothing feels "stuck").
+ * There is no re-close tail: the reveal ends fully separated so scrolling back
+ * up simply reassembles the shuttle 05→01 in one smooth, monotonic motion.
  */
 export function getScrollAnim(progress: number): ScrollViewAnim {
   const p = clamp01(progress);
@@ -204,9 +204,9 @@ export function getScrollAnim(progress: number): ScrollViewAnim {
   const local = getChapterProgress(p);
   const chapter = getChapterIndex(p);
 
-  const feather = ramp(p, 0.08, 0.3);
-  const binding = ramp(p, 0.46, 0.64);
-  const cork = ramp(p, 0.62, 0.86);
+  const feather = ramp(p, 0.08, 0.32);
+  const binding = ramp(p, 0.48, 0.72);
+  const cork = ramp(p, 0.68, 1);
 
   const featherLift = feather * 104;
   const featherSpread = feather * 0.2;
@@ -214,7 +214,7 @@ export function getScrollAnim(progress: number): ScrollViewAnim {
   const corkGlow = cork;
   const openAmount = Math.max(feather, binding * 0.9, cork * 0.75);
 
-  const spread = ramp(p, 0.08, 0.86);
+  const spread = ramp(p, 0.08, 0.95);
   const focusScale = 1 + 0.07 * spread;
   const focusY = lerp(0, 30, spread);
   const tiltY = lerp(-2, 3, spread);
