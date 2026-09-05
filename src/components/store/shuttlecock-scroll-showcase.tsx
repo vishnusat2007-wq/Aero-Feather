@@ -1,22 +1,17 @@
 "use client";
 
 import Image from "next/image";
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { cn } from "@/lib/utils";
 import {
   CHAPTERS,
-  FALLBACK_REOPEN,
-  REVERSE_CLOSE_END_DESKTOP,
-  REVERSE_CLOSE_END_MOBILE,
-  applyHeroScrub,
   getAssembledOpacity,
   getScrollAnim,
   HIGHLIGHT_ZONES,
   isAssembledPose,
-  isCloseLocked,
-  shouldMountExplodedLayers,
+  readHeroTrack,
+  shouldShowExplodedLayers,
   type HeroStage,
-  type ScrubState,
 } from "@/components/store/shuttlecock-scroll-story";
 
 export type { HeroStage };
@@ -24,6 +19,9 @@ export type { HeroStage };
 const SHUTTLE_SRC = "/shuttlecock-hero-transparent.png";
 const IMG_W = 975;
 const IMG_H = 1364;
+
+/** Static pose shown to visitors who prefer reduced motion. */
+const REDUCED_MOTION_PROGRESS = 0.42;
 
 function subscribeReducedMotion(cb: () => void) {
   const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -33,18 +31,6 @@ function subscribeReducedMotion(cb: () => void) {
 
 function getReducedMotionSnapshot() {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-}
-
-function subscribeDesktopCloseEnd(cb: () => void) {
-  const mq = window.matchMedia("(min-width: 1024px)");
-  mq.addEventListener("change", cb);
-  return () => mq.removeEventListener("change", cb);
-}
-
-function getDesktopCloseEndSnapshot() {
-  return window.matchMedia("(min-width: 1024px)").matches
-    ? REVERSE_CLOSE_END_DESKTOP
-    : REVERSE_CLOSE_END_MOBILE;
 }
 
 type Props = {
@@ -68,137 +54,79 @@ function ShuttleImage({ className, style }: { className?: string; style?: React.
   );
 }
 
-const INITIAL_SCRUB: ScrubState = { progress: 0, peak: 0, closing: false };
-
+/**
+ * Sticky 100svh pane height — the stable unit the track is measured against.
+ * window.innerHeight / visualViewport jump when a mobile URL bar shows/hides,
+ * so we read the pane's own client height instead.
+ */
 function measureStickyPaneHeight(el: HTMLElement) {
   const stage = el.firstElementChild as HTMLElement | null;
-  // Sticky 100svh pane — same units as the 300svh track. window.innerHeight
-  // and visualViewport.height jump when Android shows/hides the URL bar.
   return stage?.clientHeight || document.documentElement.clientHeight || window.innerHeight;
-}
-
-function readTrackSample(el: HTMLElement, lockedViewportHeight?: number) {
-  const rect = el.getBoundingClientRect();
-  const measured = measureStickyPaneHeight(el);
-  const viewportHeight =
-    lockedViewportHeight && Math.abs(measured - lockedViewportHeight) < 120
-      ? lockedViewportHeight
-      : measured;
-  return {
-    trackTop: rect.top,
-    trackHeight: el.offsetHeight,
-    viewportHeight,
-  };
 }
 
 export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Props) {
   const trackRef = useRef<HTMLDivElement>(null);
-  const scrubRef = useRef<ScrubState>(INITIAL_SCRUB);
-  const intentOpenRef = useRef(false);
-  const lastTouchYRef = useRef(0);
   const viewportLockRef = useRef(0);
-  const [scrub, setScrub] = useState(INITIAL_SCRUB);
+  const rafRef = useRef(0);
+  const [progress, setProgress] = useState(0);
   const reducedMotion = useSyncExternalStore(
     subscribeReducedMotion,
     getReducedMotionSnapshot,
     () => false,
   );
 
-  const applyProgress = useCallback((intentOpen: boolean) => {
+  useEffect(() => {
     const el = trackRef.current;
     if (!el) return;
-    if (viewportLockRef.current < 8) {
-      viewportLockRef.current = measureStickyPaneHeight(el);
-    }
-    const sample = readTrackSample(el, viewportLockRef.current);
-    if (Math.abs(sample.viewportHeight - viewportLockRef.current) >= 120) {
-      viewportLockRef.current = sample.viewportHeight;
-    }
-    const next = applyHeroScrub(scrubRef.current, {
-      ...sample,
-      intentOpen,
-      bounceGuard: FALLBACK_REOPEN,
-    });
-    scrubRef.current = next;
-    // Closing must clear a stale open intent so rubber-band cannot reopen.
-    if (next.closing) intentOpenRef.current = false;
-    setScrub(next);
-  }, []);
 
-  useEffect(() => {
-    let raf = 0;
-    const flush = (chromeJump = false) => {
+    // Pose is a pure function of scroll position: sample the track box each
+    // frame and hand the raw 0→1 progress straight to the renderer. No peak,
+    // direction or close-lock state — reverse scrolling is just the same curve
+    // read backwards, so it can never "fight" the scrollbar.
+    const sample = () => {
+      const measured = measureStickyPaneHeight(el);
+      if (
+        viewportLockRef.current < 8 ||
+        Math.abs(measured - viewportLockRef.current) >= 120
+      ) {
+        viewportLockRef.current = measured;
+      }
+      const rect = el.getBoundingClientRect();
+      const raw = readHeroTrack({
+        trackTop: rect.top,
+        trackHeight: el.offsetHeight,
+        viewportHeight: viewportLockRef.current,
+      });
+      setProgress(raw);
+    };
+
+    const onScroll = () => {
       document.documentElement.classList.add("af-hero-scrolling");
-      if (chromeJump) intentOpenRef.current = false;
-      if (raf) return;
-      raf = requestAnimationFrame(() => {
-        raf = 0;
-        applyProgress(intentOpenRef.current);
+      if (rafRef.current) return;
+      rafRef.current = requestAnimationFrame(() => {
+        rafRef.current = 0;
+        sample();
       });
     };
-    const onScroll = () => flush(false);
-    const onChromeJump = () => flush(true);
-    const onWheel = (event: WheelEvent) => {
-      intentOpenRef.current = event.deltaY > 0;
-    };
-    const onTouchStart = (event: TouchEvent) => {
-      lastTouchYRef.current = event.touches[0]?.clientY ?? 0;
-    };
-    const onTouchMove = (event: TouchEvent) => {
-      const y = event.touches[0]?.clientY ?? lastTouchYRef.current;
-      const dy = lastTouchYRef.current - y;
-      if (dy > 2) intentOpenRef.current = true;
-      if (dy < -2) intentOpenRef.current = false;
-      lastTouchYRef.current = y;
-    };
-    const onTouchEnd = () => {
-      intentOpenRef.current = false;
-      flush(true);
-    };
-    applyProgress(false);
+
+    sample();
     window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onChromeJump);
-    window.addEventListener("wheel", onWheel, { passive: true });
-    window.addEventListener("touchstart", onTouchStart, { passive: true });
-    window.addEventListener("touchmove", onTouchMove, { passive: true });
-    window.addEventListener("touchend", onTouchEnd, { passive: true });
-    window.addEventListener("touchcancel", onTouchEnd, { passive: true });
+    window.addEventListener("resize", onScroll);
     const visualViewport = window.visualViewport;
-    visualViewport?.addEventListener("resize", onChromeJump);
-    visualViewport?.addEventListener("scroll", onChromeJump);
+    visualViewport?.addEventListener("resize", onScroll);
+    visualViewport?.addEventListener("scroll", onScroll);
     return () => {
-      if (raf) cancelAnimationFrame(raf);
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
       document.documentElement.classList.remove("af-hero-scrolling");
       window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onChromeJump);
-      window.removeEventListener("wheel", onWheel);
-      window.removeEventListener("touchstart", onTouchStart);
-      window.removeEventListener("touchmove", onTouchMove);
-      window.removeEventListener("touchend", onTouchEnd);
-      window.removeEventListener("touchcancel", onTouchEnd);
-      visualViewport?.removeEventListener("resize", onChromeJump);
-      visualViewport?.removeEventListener("scroll", onChromeJump);
+      window.removeEventListener("resize", onScroll);
+      visualViewport?.removeEventListener("resize", onScroll);
+      visualViewport?.removeEventListener("scroll", onScroll);
     };
-  }, [applyProgress]);
+  }, []);
 
-  const closeEnd = useSyncExternalStore(
-    subscribeDesktopCloseEnd,
-    getDesktopCloseEndSnapshot,
-    () => REVERSE_CLOSE_END_DESKTOP,
-  );
-
-  const effectiveProgress = reducedMotion ? 0.42 : scrub.progress;
-  const closeLocked =
-    !reducedMotion &&
-    isCloseLocked({
-      closing: scrub.closing,
-      progress: effectiveProgress,
-      peak: scrub.peak,
-    });
-  const anim = getScrollAnim(
-    effectiveProgress,
-    reducedMotion ? undefined : { peak: scrub.peak, closeEnd, closing: scrub.closing },
-  );
+  const effectiveProgress = reducedMotion ? REDUCED_MOTION_PROGRESS : progress;
+  const anim = getScrollAnim(effectiveProgress);
   const chapterIdx = anim.chapter;
   const chapterLocal = anim.local;
   const chapter = CHAPTERS[chapterIdx] ?? CHAPTERS[0];
@@ -211,28 +139,21 @@ export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Pr
 
   const featherScale = 1 + anim.featherSpread;
   const closed = isAssembledPose(anim);
-  const showExploded = shouldMountExplodedLayers(anim, {
-    closing: closeLocked,
-    progress: effectiveProgress,
-    peak: scrub.peak,
-  });
-  const assembledOpacity = getAssembledOpacity(anim, closeLocked);
+  const showExploded = shouldShowExplodedLayers(anim);
+  const assembledOpacity = getAssembledOpacity(anim);
   const gapVisible = showExploded && anim.openAmount > 0.08;
 
   return (
     <div
       ref={trackRef}
-      className="relative h-[300svh] lg:h-[440vh]"
+      className="relative h-[220svh] lg:h-[190vh]"
       data-shuttle-closed={closed ? "true" : "false"}
       data-open-amount={anim.openAmount.toFixed(3)}
       data-feather-lift={anim.featherLift.toFixed(1)}
       data-binding-lift={anim.bindingLift.toFixed(1)}
       data-progress={effectiveProgress.toFixed(3)}
-      data-peak={scrub.peak.toFixed(3)}
-      data-closing={scrub.closing ? "true" : "false"}
-      data-close-locked={closeLocked ? "true" : "false"}
+      data-chapter={chapterIdx}
       data-exploded={showExploded ? "true" : "false"}
-      data-exploded-count={showExploded ? "1" : "0"}
     >
       <div className="sticky top-0 grid h-[100svh] grid-rows-[1fr_auto] overflow-hidden pt-16 lg:overflow-visible lg:pt-4">
         {/* Shuttle stage — centred, kept clear of text zones */}
