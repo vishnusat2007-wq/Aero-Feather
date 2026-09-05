@@ -76,7 +76,7 @@ export const REVERSE_CLOSE_END_DESKTOP = CLOSED_PROGRESS;
 
 /**
  * Extra scroll distance past the sticky 100svh pane. ~100px per mouse-wheel
- * notch × 5 notches ≈ one chapter per click on desktop and phone.
+ * notch × 5 notches lands on each of the five chapters (one part per click).
  */
 export const HERO_TRACK_SCROLL_PX = 520;
 export const HERO_TRACK_HEIGHT_CLASS = "h-[calc(100svh+520px)]";
