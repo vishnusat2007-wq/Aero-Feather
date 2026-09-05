@@ -239,14 +239,120 @@ export function getReverseCloseAmount(
 export type ScrubState = {
   progress: number;
   peak: number;
+  /** True after reverse begins. Cleared only on a confirmed new open. */
+  closing: boolean;
 };
 
-/** High-water peak since the last full close. Never lowered on reverse. */
-export function advanceScrub(prev: ScrubState, raw: number, snapClosed = 0): ScrubState {
+export type AdvanceScrubOpts = {
+  snapClosed?: number;
+  /** Track is still below the viewport — user is on the copy above the shuttle. */
+  aboveTrack?: boolean;
+  /** User is actively opening (finger/wheel moving the page down). */
+  intentOpen?: boolean;
+  /**
+   * Finger-up / URL-bar increases past this still keep the close peak.
+   * Larger than a typical Android overscroll (~0.09) so bounce cannot
+   * re-enter getForwardAnim. Intentional opens pass intentOpen instead.
+   */
+  bounceGuard?: number;
+};
+
+/** Ignore no-touch reopen until well past Android rubber-band distance (~0.09). */
+export const FALLBACK_REOPEN = 0.28;
+
+function asScrub(prev: { progress: number; peak: number; closing?: boolean }): ScrubState {
+  return {
+    progress: prev.progress,
+    peak: prev.peak,
+    closing: prev.closing ?? prev.peak > prev.progress + 0.001,
+  };
+}
+
+/**
+ * High-water peak since the last confirmed session end.
+ *
+ * Do NOT reset peak at progress 0. Android touchend-settle, rubber-band and
+ * URL-bar resize all dip to 0 then bounce to 0.12–0.22. Resetting the peak
+ * makes that bounce `getForwardAnim(0.22)` — chapter-1 explode under the PNG.
+ * Peak clears only when the user is above the track, or they start a new open.
+ */
+export function advanceScrub(
+  prev: { progress: number; peak: number; closing?: boolean },
+  raw: number,
+  snapClosedOrOpts: number | AdvanceScrubOpts = 0,
+): ScrubState {
+  const opts: AdvanceScrubOpts =
+    typeof snapClosedOrOpts === "number" ? { snapClosed: snapClosedOrOpts } : snapClosedOrOpts;
+  const snapClosed = opts.snapClosed ?? 0;
+  const bounceGuard = opts.bounceGuard ?? FALLBACK_REOPEN;
+  const prevState = asScrub(prev);
+
   let progress = clamp01(raw);
   if (progress <= snapClosed) progress = 0;
-  if (progress <= 0) return { progress: 0, peak: 0 };
-  return { progress, peak: Math.max(prev.peak, progress) };
+
+  if (opts.aboveTrack || (progress <= 0 && !prevState.closing && prevState.peak <= 0)) {
+    return { progress: 0, peak: 0, closing: false };
+  }
+
+  if (progress <= 0) {
+    return { progress: 0, peak: prevState.peak, closing: prevState.peak > 0 };
+  }
+
+  const increasing = progress > prevState.progress + 0.0005;
+  const decreasing = progress < prevState.progress - 0.0005;
+  const closing = prevState.closing || prevState.peak > prevState.progress + 0.001;
+
+  if (decreasing) {
+    return { progress, peak: Math.max(prevState.peak, prevState.progress, progress), closing: true };
+  }
+
+  if (closing && increasing) {
+    // Mid-rewind (0.50 → 0.55) keeps the peak and stays on the reverse blend.
+    // Only a new open FROM the start pose may drop the peak.
+    const fromStart = prevState.progress <= CLOSED_PROGRESS;
+    const reopen =
+      fromStart && (Boolean(opts.intentOpen) || progress >= bounceGuard);
+    if (reopen) {
+      return { progress, peak: progress, closing: false };
+    }
+    return { progress, peak: prevState.peak, closing: true };
+  }
+
+  return { progress, peak: Math.max(prevState.peak, progress), closing: false };
+}
+
+export type HeroTrackSample = {
+  trackTop: number;
+  trackHeight: number;
+  /** Must be the sticky 100svh pane height — not window.innerHeight. */
+  viewportHeight: number;
+};
+
+/** Progress from layout boxes. Sticky pane height stays stable when the URL bar toggles. */
+export function readHeroTrack(sample: HeroTrackSample): { raw: number; aboveTrack: boolean } {
+  const scrollable = Math.max(1, sample.trackHeight - sample.viewportHeight);
+  return {
+    raw: -sample.trackTop / scrollable,
+    aboveTrack: sample.trackTop > 1,
+  };
+}
+
+export function applyHeroScrub(
+  prev: { progress: number; peak: number; closing?: boolean },
+  sample: HeroTrackSample & {
+    intentOpen?: boolean;
+    bounceGuard?: number;
+    snapClosed?: number;
+  },
+): ScrubState {
+  const { raw, aboveTrack } = readHeroTrack(sample);
+  const snapped = raw >= 0.985 ? 1 : raw;
+  return advanceScrub(prev, snapped, {
+    aboveTrack,
+    intentOpen: sample.intentOpen,
+    bounceGuard: sample.bounceGuard,
+    snapClosed: sample.snapClosed,
+  });
 }
 
 function blendToClosed(from: ScrollViewAnim, amount: number): ScrollViewAnim {

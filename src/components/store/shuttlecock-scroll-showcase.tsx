@@ -5,17 +5,17 @@ import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "
 import { cn } from "@/lib/utils";
 import {
   CHAPTERS,
-  CLOSED_PROGRESS,
+  FALLBACK_REOPEN,
   REVERSE_CLOSE_END_DESKTOP,
   REVERSE_CLOSE_END_MOBILE,
-  advanceScrub,
+  applyHeroScrub,
   getReverseExplodedOpacity,
   getScrollAnim,
   HIGHLIGHT_ZONES,
   isAssembledPose,
-  isReverseAssembledPose,
   shouldShowExplodedLayers,
   type HeroStage,
+  type ScrubState,
 } from "@/components/store/shuttlecock-scroll-story";
 
 export type { HeroStage };
@@ -67,20 +67,27 @@ function ShuttleImage({ className, style }: { className?: string; style?: React.
   );
 }
 
-const INITIAL_SCRUB = { progress: 0, peak: 0 };
+const INITIAL_SCRUB: ScrubState = { progress: 0, peak: 0, closing: false };
 
-function readTrackProgress(el: HTMLElement): number {
+function readTrackSample(el: HTMLElement) {
   const rect = el.getBoundingClientRect();
-  // Layout viewport only — visualViewport.offsetTop inflates Android progress
-  // so reverse scroll never reaches the assembled start pose.
-  const scrollable = Math.max(1, el.offsetHeight - window.innerHeight);
-  return -rect.top / scrollable;
+  const stage = el.firstElementChild as HTMLElement | null;
+  // Sticky 100svh pane — same units as the 300svh track. window.innerHeight
+  // jumps when Android shows/hides the URL bar and inflates progress.
+  const viewportHeight =
+    stage?.clientHeight || document.documentElement.clientHeight || window.innerHeight;
+  return {
+    trackTop: rect.top,
+    trackHeight: el.offsetHeight,
+    viewportHeight,
+  };
 }
 
 export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Props) {
   const trackRef = useRef<HTMLDivElement>(null);
-  const lastRawRef = useRef(0);
-  const peakRef = useRef(0);
+  const scrubRef = useRef<ScrubState>(INITIAL_SCRUB);
+  const intentOpenRef = useRef(false);
+  const lastTouchYRef = useRef(0);
   const [scrub, setScrub] = useState(INITIAL_SCRUB);
   const reducedMotion = useSyncExternalStore(
     subscribeReducedMotion,
@@ -88,67 +95,62 @@ export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Pr
     () => false,
   );
 
-  const applyProgress = useCallback((raw: number, settled: boolean) => {
-    const startSlackPx = settled
-      ? Math.max(100, window.innerHeight * 0.12)
-      : Math.max(48, window.innerHeight * 0.06);
+  const applyProgress = useCallback((intentOpen: boolean) => {
     const el = trackRef.current;
-    const nearStart = el ? el.getBoundingClientRect().top > -startSlackPx : raw <= 0;
-    const snapClosed = settled ? CLOSED_PROGRESS : 0.02;
-
-    let progress = Math.max(0, Math.min(1, raw));
-    if (nearStart || raw <= snapClosed) progress = 0;
-    else if (raw >= 0.985) progress = 1;
-
-    const next = advanceScrub(
-      { progress: lastRawRef.current, peak: peakRef.current },
-      progress,
-    );
-    lastRawRef.current = next.progress;
-    peakRef.current = next.peak;
+    if (!el) return;
+    const sample = readTrackSample(el);
+    const next = applyHeroScrub(scrubRef.current, {
+      ...sample,
+      intentOpen,
+      bounceGuard: FALLBACK_REOPEN,
+    });
+    scrubRef.current = next;
+    // Closing must clear a stale open intent so rubber-band cannot reopen.
+    if (next.closing) intentOpenRef.current = false;
     setScrub(next);
   }, []);
 
-  const updateProgress = useCallback(
-    (settled = false) => {
-      const el = trackRef.current;
-      if (!el) return;
-      applyProgress(readTrackProgress(el), settled);
-    },
-    [applyProgress],
-  );
-
   useEffect(() => {
     let raf = 0;
-    const onScroll = () => {
+    const flush = (intentOpen: boolean) => {
       document.documentElement.classList.add("af-hero-scrolling");
       if (raf) return;
       raf = requestAnimationFrame(() => {
         raf = 0;
-        updateProgress(false);
+        applyProgress(intentOpen);
       });
     };
-    const onSettle = () => {
-      if (raf) cancelAnimationFrame(raf);
-      raf = 0;
-      updateProgress(true);
+    const onScroll = () => flush(intentOpenRef.current);
+    const onResize = () => flush(false);
+    const onWheel = (event: WheelEvent) => {
+      intentOpenRef.current = event.deltaY > 0;
     };
-    updateProgress(true);
+    const onTouchStart = (event: TouchEvent) => {
+      lastTouchYRef.current = event.touches[0]?.clientY ?? 0;
+    };
+    const onTouchMove = (event: TouchEvent) => {
+      const y = event.touches[0]?.clientY ?? lastTouchYRef.current;
+      const dy = lastTouchYRef.current - y;
+      if (dy > 2) intentOpenRef.current = true;
+      if (dy < -2) intentOpenRef.current = false;
+      lastTouchYRef.current = y;
+    };
+    applyProgress(false);
     window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onScroll);
-    window.addEventListener("touchend", onSettle, { passive: true });
-    window.addEventListener("pointerup", onSettle, { passive: true });
-    window.addEventListener("scrollend", onSettle);
+    window.addEventListener("resize", onResize);
+    window.addEventListener("wheel", onWheel, { passive: true });
+    window.addEventListener("touchstart", onTouchStart, { passive: true });
+    window.addEventListener("touchmove", onTouchMove, { passive: true });
     return () => {
       if (raf) cancelAnimationFrame(raf);
       document.documentElement.classList.remove("af-hero-scrolling");
       window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onScroll);
-      window.removeEventListener("touchend", onSettle);
-      window.removeEventListener("pointerup", onSettle);
-      window.removeEventListener("scrollend", onSettle);
+      window.removeEventListener("resize", onResize);
+      window.removeEventListener("wheel", onWheel);
+      window.removeEventListener("touchstart", onTouchStart);
+      window.removeEventListener("touchmove", onTouchMove);
     };
-  }, [updateProgress]);
+  }, [applyProgress]);
 
   const closeEnd = useSyncExternalStore(
     subscribeDesktopCloseEnd,
@@ -172,15 +174,12 @@ export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Pr
   }, [chapter.num, chapter.label, onStageChange, onChapterChange, chapterIdx]);
 
   const featherScale = 1 + anim.featherSpread;
-  const reversing = !reducedMotion && effectiveProgress + 0.001 < scrub.peak;
-  const reverseAssembled = isReverseAssembledPose(anim);
-  const closed = reversing ? reverseAssembled : isAssembledPose(anim);
+  const reversing = !reducedMotion && (scrub.closing || effectiveProgress + 0.001 < scrub.peak);
+  const closed = isAssembledPose(anim);
   const explodedOpacity = reversing
     ? getReverseExplodedOpacity(effectiveProgress, scrub.peak, closeEnd)
     : 1;
-  const showExploded = reversing
-    ? explodedOpacity > 0.01
-    : shouldShowExplodedLayers(anim);
+  const showExploded = shouldShowExplodedLayers(anim) && explodedOpacity > 0.01;
   const assembledOpacity = reversing
     ? 1 - explodedOpacity
     : showExploded
@@ -198,6 +197,7 @@ export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Pr
       data-binding-lift={anim.bindingLift.toFixed(1)}
       data-progress={effectiveProgress.toFixed(3)}
       data-peak={scrub.peak.toFixed(3)}
+      data-closing={scrub.closing ? "true" : "false"}
       data-exploded={showExploded ? "true" : "false"}
     >
       <div className="sticky top-0 grid h-[100svh] grid-rows-[1fr_auto] overflow-hidden pt-16 lg:overflow-visible lg:pt-4">
