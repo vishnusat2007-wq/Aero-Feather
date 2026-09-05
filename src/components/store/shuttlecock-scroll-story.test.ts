@@ -5,7 +5,6 @@ import {
   CHAPTERS,
   CHAPTER_BOUNDS,
   CLOSED_PROGRESS,
-  RECLOSE_START,
   getAssembledOpacity,
   getChapterIndex,
   getChapterProgress,
@@ -52,7 +51,7 @@ describe("pose is a pure function of progress (no fighting on reverse)", () => {
     downward.forEach((pose, i) => assert.deepEqual(pose, upward[i]));
   });
 
-  it("is assembled at both ends of the track", () => {
+  it("is assembled through the intro hold", () => {
     for (const p of [0, 0.04, CLOSED_PROGRESS - 0.001]) {
       const anim = getScrollAnim(p);
       assert.equal(anim.openAmount, 0);
@@ -61,13 +60,14 @@ describe("pose is a pure function of progress (no fighting on reverse)", () => {
       assert.equal(true, isAssembledPose(anim));
       assert.equal(false, shouldShowExplodedLayers(anim));
     }
+  });
 
+  it("is fully separated at the end so reverse just reassembles it", () => {
     const end = getScrollAnim(1);
-    assert.equal(end.openAmount, 0);
-    assert.equal(end.featherLift, 0);
-    assert.equal(end.bindingLift, 0);
-    assert.equal(true, isAssembledPose(end));
-    assert.equal(false, shouldShowExplodedLayers(end));
+    assert.equal(end.chapter, 4);
+    assert.ok(end.featherLift > 0);
+    assert.ok(end.bindingLift > 0);
+    assert.equal(true, shouldShowExplodedLayers(end));
   });
 
   it("separates the parts through the middle of the track", () => {
@@ -79,24 +79,18 @@ describe("pose is a pure function of progress (no fighting on reverse)", () => {
   });
 });
 
-describe("reveal then re-close", () => {
-  it("opens after the intro and closes again over the re-close tail", () => {
+describe("progressive reveal", () => {
+  it("opens monotonically from the intro to fully separated", () => {
     assert.ok(getScrollAnim(0.3).openAmount > getScrollAnim(0.1).openAmount);
-    // Falls back toward assembled as the tail plays out.
-    assert.ok(getScrollAnim(0.95).openAmount < getScrollAnim(0.82).openAmount);
-    assert.ok(getScrollAnim(RECLOSE_START + 0.06).openAmount < getScrollAnim(RECLOSE_START).openAmount);
+    assert.ok(getScrollAnim(0.6).openAmount >= getScrollAnim(0.3).openAmount);
+    assert.ok(getScrollAnim(1).openAmount > getScrollAnim(0.6).openAmount - 1e-9);
   });
 
-  it("still shows the cork part (05) before the re-close tail", () => {
-    const corkStage = getScrollAnim(0.72);
+  it("shows the cork part (05) near the end", () => {
+    const corkStage = getScrollAnim(0.8);
     assert.equal(corkStage.chapter, 4);
+    assert.ok(corkStage.corkGlow > 0);
     assert.equal(true, shouldShowExplodedLayers(corkStage));
-  });
-
-  it("returns the label to the whole shuttle (01) once reassembled at the end", () => {
-    const end = getScrollAnim(0.98);
-    assert.equal(end.chapter, 0);
-    assert.equal(true, isAssembledPose(end));
   });
 
   it("lifts feathers before binding before cork", () => {

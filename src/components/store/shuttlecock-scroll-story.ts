@@ -64,9 +64,6 @@ export const CHAPTER_BOUNDS = [0, 0.08, 0.28, 0.46, 0.64, 1] as const;
 /** Intro hold — the shuttle is assembled and no part has lifted yet. */
 export const CLOSED_PROGRESS = CHAPTER_BOUNDS[1];
 
-/** Past this progress the shuttle reassembles so scrolling out is clean. */
-export const RECLOSE_START = 0.86;
-
 /**
  * The assembled PNG is fully opaque at/under this openAmount. Treat that as
  * visually closed so exploded cork/feather/binding crops never sit under it.
@@ -191,24 +188,25 @@ export function getAssembledOpacity(anim: ScrollViewAnim): number {
  * Choreography across 0→1:
  *   0.00–0.08  assembled hold (chapter 01 · FLIGHT)
  *   0.08–0.28  feathers lift + bloom (02 · FEATHER)
- *   0.28–0.48  feather geometry arcs (03 · GEOMETRY)
- *   0.48–0.68  binding lifts (04 · DURABILITY)
- *   0.68–0.90  cork separates + glows (05 · CONTROL)
- *   0.90–1.00  re-close tail — every part settles back into the assembled PNG
+ *   0.28–0.46  feather geometry arcs (03 · GEOMETRY)
+ *   0.46–0.64  binding lifts (04 · DURABILITY)
+ *   0.64–1.00  cork separates + glows, fully exploded (05 · CONTROL)
+ *
+ * There is no re-close tail: the reveal ends fully separated so that scrolling
+ * back up simply reassembles the shuttle 05→01 in one smooth, monotonic motion.
+ * Re-closing at the bottom would force a re-open the instant you scrolled back
+ * into the section, which reads as a jump.
  */
 export function getScrollAnim(progress: number): ScrollViewAnim {
   const p = clamp01(progress);
   if (p <= 0 || isFullyClosed(p)) return closedAnim();
 
   const local = getChapterProgress(p);
+  const chapter = getChapterIndex(p);
 
-  // Global assembly multiplier: 1 while the story plays, ramping back to 0 over
-  // the re-close tail so the shuttle is whole again by the end of the track.
-  const assembly = 1 - ramp(p, RECLOSE_START, 1);
-
-  const feather = ramp(p, 0.08, 0.3) * assembly;
-  const binding = ramp(p, 0.46, 0.64) * assembly;
-  const cork = ramp(p, 0.62, 0.84) * assembly;
+  const feather = ramp(p, 0.08, 0.3);
+  const binding = ramp(p, 0.46, 0.64);
+  const cork = ramp(p, 0.62, 0.86);
 
   const featherLift = feather * 104;
   const featherSpread = feather * 0.2;
@@ -216,19 +214,14 @@ export function getScrollAnim(progress: number): ScrollViewAnim {
   const corkGlow = cork;
   const openAmount = Math.max(feather, binding * 0.9, cork * 0.75);
 
-  // Once the re-close tail has folded every part back into the assembled PNG,
-  // show the whole shuttle again (01) rather than a stale part number.
-  const reassembledEnd = openAmount <= ASSEMBLED_OPEN_AMOUNT && p > 0.5;
-  const chapter = reassembledEnd ? 0 : getChapterIndex(p);
-
-  const spread = ramp(p, 0.08, RECLOSE_START) * assembly;
+  const spread = ramp(p, 0.08, 0.86);
   const focusScale = 1 + 0.07 * spread;
   const focusY = lerp(0, 30, spread);
   const tiltY = lerp(-2, 3, spread);
   const tiltX = -1 + Math.sin(p * Math.PI) * 1.5;
 
   const highlight: ScrollChapter | null =
-    chapter === 0 || assembly < 0.4 ? null : CHAPTERS[chapter].id;
+    chapter === 0 ? null : CHAPTERS[chapter].id;
 
   return {
     focusY,
