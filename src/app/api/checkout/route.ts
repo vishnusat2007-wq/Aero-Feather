@@ -88,6 +88,7 @@ export async function POST(request: Request) {
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
     const stripe = getStripe();
     const suffix = Math.random().toString(36).slice(2, 10);
+    const freeShipping = totalCents >= 7500;
 
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
@@ -95,9 +96,56 @@ export async function POST(request: Request) {
       line_items: lineItems,
       success_url: `${appUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${appUrl}/cart`,
-      metadata: { order_id: order.id },
-      integration_identifier: `aero-feather-${suffix}`,
-      shipping_address_collection: { allowed_countries: ["IE", "GB", "FR", "DE", "NL", "BE"] },
+      client_reference_id: order.id,
+      metadata: {
+        order_id: order.id,
+        store: "aero-feather",
+        market: "ireland",
+      },
+      integration_identifier: `aero-feather-checkout-${suffix}`,
+      billing_address_collection: "required",
+      phone_number_collection: { enabled: true },
+      shipping_address_collection: {
+        allowed_countries: ["IE", "GB", "FR", "DE", "NL", "BE"],
+      },
+      shipping_options: [
+        freeShipping
+          ? {
+              shipping_rate_data: {
+                type: "fixed_amount",
+                fixed_amount: { amount: 0, currency: "eur" },
+                display_name: "Free Ireland delivery (orders €75+)",
+                delivery_estimate: {
+                  minimum: { unit: "business_day", value: 2 },
+                  maximum: { unit: "business_day", value: 4 },
+                },
+              },
+            }
+          : {
+              shipping_rate_data: {
+                type: "fixed_amount",
+                fixed_amount: { amount: 495, currency: "eur" },
+                display_name: "Standard Ireland / EU delivery",
+                delivery_estimate: {
+                  minimum: { unit: "business_day", value: 2 },
+                  maximum: { unit: "business_day", value: 5 },
+                },
+              },
+            },
+      ],
+      custom_text: {
+        shipping_address: {
+          message: "We ship tournament-grade shuttlecocks from Ireland. Please include a contact phone for delivery.",
+        },
+        submit: {
+          message: "Aero Feather — premium goose-feather shuttlecocks for Irish badminton.",
+        },
+      },
+      payment_intent_data: {
+        description: `Aero Feather order ${order.id}`,
+        statement_descriptor_suffix: "AEROFEATHER",
+        metadata: { order_id: order.id },
+      },
     });
 
     await service
