@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase/server";
 import { getStripe, isStripeConfigured } from "@/lib/stripe";
 import type { CartItem } from "@/lib/types";
 
@@ -32,12 +32,12 @@ export async function POST(request: Request) {
       data: { user },
     } = await supabase.auth.getUser();
 
-    const service = await createServiceClient();
     const productIds = items.map((i) => i.productId);
-    const { data: products, error: productsError } = await service
+    const { data: products, error: productsError } = await supabase
       .from("af_products")
       .select("id, name, slug, price_cents, stock, active")
-      .in("id", productIds);
+      .in("id", productIds)
+      .eq("active", true);
 
     if (productsError || !products?.length) {
       return NextResponse.json({ error: "Products not found" }, { status: 400 });
@@ -63,34 +63,25 @@ export async function POST(request: Request) {
       };
     });
 
-    const { data: order, error: orderError } = await service
-      .from("af_orders")
-      .insert({
-        user_id: user?.id ?? null,
-        email: email || user?.email || "",
-        status: "pending",
-        total_cents: totalCents,
-      })
-      .select()
-      .single();
-
-    if (orderError || !order) {
-      return NextResponse.json({ error: "Could not create order" }, { status: 500 });
-    }
-
-    await service.from("af_order_items").insert(
-      items.map((item) => {
-        const product = products.find((p) => p.id === item.productId)!;
-        return {
-          order_id: order.id,
-          product_id: product.id,
-          product_name: product.name,
-          product_slug: product.slug,
+    const { data: orderId, error: orderError } = await supabase.rpc(
+      "af_create_pending_order",
+      {
+        p_email: email || user?.email || "",
+        p_user_id: user?.id ?? null,
+        p_total_cents: totalCents,
+        p_items: items.map((item) => ({
+          product_id: item.productId,
           quantity: item.quantity,
-          unit_price_cents: product.price_cents,
-        };
-      }),
+        })),
+      },
     );
+
+    if (orderError || !orderId) {
+      return NextResponse.json(
+        { error: orderError?.message ?? "Could not create order" },
+        { status: 500 },
+      );
+    }
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
     const stripe = getStripe();
@@ -103,9 +94,9 @@ export async function POST(request: Request) {
       line_items: lineItems,
       success_url: `${appUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${appUrl}/cart`,
-      client_reference_id: order.id,
+      client_reference_id: String(orderId),
       metadata: {
-        order_id: order.id,
+        order_id: String(orderId),
         store: "aero-feather",
         market: "ireland",
       },
@@ -142,23 +133,31 @@ export async function POST(request: Request) {
       ],
       custom_text: {
         shipping_address: {
-          message: "We ship tournament-grade shuttlecocks from Ireland. Please include a contact phone for delivery.",
+          message:
+            "We ship tournament-grade shuttlecocks from Ireland. Please include a contact phone for delivery.",
         },
         submit: {
           message: "Aero Feather — premium goose-feather shuttlecocks for Irish badminton.",
         },
       },
       payment_intent_data: {
-        description: `Aero Feather order ${order.id}`,
+        description: `Aero Feather order ${orderId}`,
         statement_descriptor_suffix: "AEROFEATHER",
-        metadata: { order_id: order.id },
+        metadata: { order_id: String(orderId) },
       },
     });
 
-    await service
-      .from("af_orders")
-      .update({ stripe_session_id: session.id })
-      .eq("id", order.id);
+    const { error: attachError } = await supabase.rpc("af_attach_stripe_session", {
+      p_order_id: orderId,
+      p_session_id: session.id,
+    });
+
+    if (attachError) {
+      return NextResponse.json(
+        { error: attachError.message ?? "Could not attach Stripe session" },
+        { status: 500 },
+      );
+    }
 
     return NextResponse.json({ url: session.url });
   } catch (err) {

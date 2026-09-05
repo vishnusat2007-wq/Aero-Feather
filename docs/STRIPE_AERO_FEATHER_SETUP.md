@@ -33,3 +33,18 @@ Add these in the Stripe Dashboard, then paste into Vercel.
 Redeploy after saving.
 
 If you want the agent to create webhooks automatically next time, re-authorize with write scopes via the Stripe MCP connect flow in Cursor.
+
+
+## 4. Re-authorize Stripe MCP (optional, for agents)
+
+If Cursor still cannot create webhooks for **Aero Feather**, reconnect Stripe MCP with write scopes:
+
+1. Open the Stripe MCP account manager in Cursor
+2. Prefer **Aero Feather** (`acct_1UCO3SIAW6C0UScO`) over PBC Kildare
+3. Grant Checkout Sessions + Webhook Endpoints write
+
+Until then, create the live restricted key + webhook signing secret in the Dashboard (steps 1–2) and paste them into Vercel (step 3).
+
+## 5. Local test sandbox
+
+For local Buy Now testing without live charges, you can use a claimable Stripe sandbox `rkcs_test_…` key in `.env.local` as `STRIPE_SECRET_KEY`. Production must use the Aero Feather **live** key.

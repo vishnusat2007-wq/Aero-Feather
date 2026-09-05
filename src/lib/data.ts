@@ -1,6 +1,5 @@
 import {
   createClient,
-  createServiceClient,
   isSupabaseConfigured,
 } from "@/lib/supabase/server";
 import type { Order, OrderItem, Product, Profile } from "@/lib/types";
@@ -192,15 +191,11 @@ export async function markOrderPaidBySession(
   sessionId: string,
   paymentIntentId: string | null,
 ) {
-  const supabase = await createServiceClient();
-  const { error } = await supabase
-    .from(ORDERS)
-    .update({
-      status: "paid",
-      stripe_payment_intent_id: paymentIntentId,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("stripe_session_id", sessionId);
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("af_mark_order_paid_by_session", {
+    p_session_id: sessionId,
+    p_payment_intent_id: paymentIntentId,
+  });
   if (error) throw error;
 }
 
