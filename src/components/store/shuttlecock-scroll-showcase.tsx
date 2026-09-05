@@ -155,6 +155,17 @@ export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Pr
       data-chapter={chapterIdx}
       data-exploded={showExploded ? "true" : "false"}
     >
+      {/* One gentle scroll-snap stop per part (01–05), placed at the progress
+          where that part is clearly separated. Proximity snap lets the shuttle
+          settle on each part without ever trapping or fighting the scroll. */}
+      {[0, 0.26, 0.44, 0.64, 0.84].map((p) => (
+        <div
+          key={p}
+          aria-hidden
+          className="pointer-events-none absolute left-0 h-px w-px"
+          style={{ top: `calc(${p} * (100% - 100svh))`, scrollSnapAlign: "start" }}
+        />
+      ))}
       <div className="sticky top-0 grid h-[100svh] grid-rows-[1fr_auto] overflow-hidden pt-16 lg:overflow-visible lg:pt-4">
         {/* Shuttle stage — centred, kept clear of text zones */}
         <div
