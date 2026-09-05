@@ -52,6 +52,27 @@ export function HeroSection() {
 
           {/* Scroll-synced chapter copy — desktop only; stays left so shuttle stays clear */}
           <div className="mt-8 hidden min-h-[140px] lg:block">
+            <ol className="mb-5 flex items-center gap-2" aria-label="Shuttlecock parts">
+              {CHAPTERS.map((c, i) => (
+                <li key={c.id} className="flex items-center gap-2">
+                  <span
+                    className={cn(
+                      "flex h-7 w-7 items-center justify-center text-sm font-bold tabular-nums transition-colors duration-300",
+                      i === chapterIdx
+                        ? "border border-af-cyan/50 bg-af-cyan/15 text-af-cyan"
+                        : i < chapterIdx
+                          ? "text-af-cyan/70"
+                          : "text-af-muted/50",
+                    )}
+                  >
+                    {Number(c.num)}
+                  </span>
+                  {i < CHAPTERS.length - 1 && (
+                    <span className="h-px w-3 bg-af-cyan/20" aria-hidden />
+                  )}
+                </li>
+              ))}
+            </ol>
             <div className="flex items-baseline gap-2 border-l-2 border-af-cyan/40 pl-4 transition-all duration-500">
               <span className="text-xl font-bold tabular-nums text-af-cyan">{stage.num}</span>
               <span className="text-[11px] font-semibold tracking-[0.2em] text-af-muted">/</span>
@@ -62,27 +83,14 @@ export function HeroSection() {
             <div key={chapter.id} className="mt-5 animate-af-fade-up">
               <p className="text-base font-bold tracking-wide text-af-text">{chapter.title}</p>
               <p className="mt-3 max-w-sm text-sm leading-relaxed text-af-muted">{chapter.desc}</p>
-              {chapterIdx > 0 && (
-                <ul className="mt-4 space-y-2">
-                  {chapter.bullets.map((b) => (
-                    <li key={b} className="flex items-start gap-2.5 text-sm text-af-muted">
-                      <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-af-cyan" />
-                      {b}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-            <div className="mt-5 flex gap-1.5">
-              {CHAPTERS.map((c, i) => (
-                <span
-                  key={c.id}
-                  className={cn(
-                    "h-1 flex-1 max-w-10 rounded-full transition-all duration-500",
-                    i === chapterIdx ? "bg-af-cyan" : "bg-af-cyan/15",
-                  )}
-                />
-              ))}
+              <ul className="mt-4 space-y-2">
+                {chapter.bullets.map((b) => (
+                  <li key={b} className="flex items-start gap-2.5 text-sm text-af-muted">
+                    <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-af-cyan" />
+                    {b}
+                  </li>
+                ))}
+              </ul>
             </div>
           </div>
 

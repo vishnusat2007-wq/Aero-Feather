@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import {
   CHAPTERS,
   FALLBACK_REOPEN,
+  HERO_TRACK_HEIGHT_CLASS,
   REVERSE_CLOSE_END_DESKTOP,
   REVERSE_CLOSE_END_MOBILE,
   applyHeroScrub,
@@ -68,11 +69,11 @@ function ShuttleImage({ className, style }: { className?: string; style?: React.
   );
 }
 
-const INITIAL_SCRUB: ScrubState = { progress: 0, peak: 0, closing: false };
+const INITIAL_SCRUB: ScrubState = { progress: 0, peak: 0, closing: false, freeExit: false };
 
 function measureStickyPaneHeight(el: HTMLElement) {
   const stage = el.firstElementChild as HTMLElement | null;
-  // Sticky 100svh pane — same units as the 300svh track. window.innerHeight
+  // Sticky 100svh pane — same units as the short 5-click track. window.innerHeight
   // and visualViewport.height jump when Android shows/hides the URL bar.
   return stage?.clientHeight || document.documentElement.clientHeight || window.innerHeight;
 }
@@ -222,7 +223,7 @@ export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Pr
   return (
     <div
       ref={trackRef}
-      className="relative h-[300svh] lg:h-[440vh]"
+      className={cn("relative", HERO_TRACK_HEIGHT_CLASS)}
       data-shuttle-closed={closed ? "true" : "false"}
       data-open-amount={anim.openAmount.toFixed(3)}
       data-feather-lift={anim.featherLift.toFixed(1)}
@@ -230,6 +231,7 @@ export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Pr
       data-progress={effectiveProgress.toFixed(3)}
       data-peak={scrub.peak.toFixed(3)}
       data-closing={scrub.closing ? "true" : "false"}
+      data-free-exit={scrub.freeExit ? "true" : "false"}
       data-close-locked={closeLocked ? "true" : "false"}
       data-exploded={showExploded ? "true" : "false"}
       data-exploded-count={showExploded ? "1" : "0"}

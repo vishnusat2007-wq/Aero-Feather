@@ -54,23 +54,32 @@ export const CHAPTERS: ChapterInfo[] = [
   },
 ];
 
-/** Chapter windows across the full 0→1 scroll track (cork runs through the end). */
-const CHAPTER_BOUNDS = [0, 0.08, 0.26, 0.44, 0.62, 1] as const;
+/**
+ * Five equal chapter windows — one scroll notch / click per part.
+ * 01 assembled overview → 02 feathers → 03 geometry → 04 binding → 05 cork.
+ */
+const CHAPTER_BOUNDS = [0, 0.2, 0.4, 0.6, 0.8, 1] as const;
 
 /** Intro hold — forward opening has not started. */
 export const CLOSED_PROGRESS = CHAPTER_BOUNDS[1];
 
 /**
  * Reverse must land on the assembled start pose by this progress — near the
- * intro, not 30% after the peak. A short close-span left most of the rewind
- * sitting on closedAnim(), so a 0.003 Android jitter flipped direction and
- * exploded chapter 3 under the PNG.
+ * intro, not mid-track. Mobile finishes slightly sooner than desktop so the
+ * short phone track snaps closed without lingering on a half-open pose.
  *
- * Mobile finishes slightly sooner than desktop; the shorter 300svh track is
- * the rest of the phone snap. Opening keyframes are unchanged.
+ * Track length is ~5 wheel notches of scroll beyond the sticky pane
+ * (`HERO_TRACK_SCROLL_PX`) so the whole story is five clicks, not a long scrub.
  */
 export const REVERSE_CLOSE_END_MOBILE = 0.12;
 export const REVERSE_CLOSE_END_DESKTOP = CLOSED_PROGRESS;
+
+/**
+ * Extra scroll distance past the sticky 100svh pane. ~100px per mouse-wheel
+ * notch × 5 notches lands on each of the five chapters (one part per click).
+ */
+export const HERO_TRACK_SCROLL_PX = 520;
+export const HERO_TRACK_HEIGHT_CLASS = "h-[calc(100svh+520px)]";
 
 function clamp01(v: number) {
   return Math.max(0, Math.min(1, v));
@@ -269,12 +278,20 @@ export type ScrubState = {
   peak: number;
   /** True after reverse begins. Cleared only on a confirmed new open. */
   closing: boolean;
+  /**
+   * User finished the story and scrolled into the page below. Upward return
+   * stays assembled and free — no reverse-close fight through the track.
+   * Cleared only once they are clearly above the track again.
+   */
+  freeExit: boolean;
 };
 
 export type AdvanceScrubOpts = {
   snapClosed?: number;
   /** Track is clearly below the viewport — user left the shuttle for the copy. */
   aboveTrack?: boolean;
+  /** Track has fully left above the viewport — user is in the page below. */
+  belowTrack?: boolean;
   /** User is actively opening (finger/wheel moving the page down). */
   intentOpen?: boolean;
   /**
@@ -291,14 +308,23 @@ export const FALLBACK_REOPEN = 0.4;
 /** Rubber-band / URL-bar can push the track a few dozen px; that is not "left". */
 export const ABOVE_TRACK_PX = 96;
 
+/** Past the sticky range by this much ⇒ user is reading the page below. */
+export const BELOW_TRACK_PX = 48;
+
 /** A new open is only allowed from the assembled intro, not mid-rewind. */
 export const REOPEN_FROM_PROGRESS = CLOSED_PROGRESS;
 
-function asScrub(prev: { progress: number; peak: number; closing?: boolean }): ScrubState {
+function asScrub(prev: {
+  progress: number;
+  peak: number;
+  closing?: boolean;
+  freeExit?: boolean;
+}): ScrubState {
   return {
     progress: prev.progress,
     peak: prev.peak,
     closing: prev.closing ?? prev.peak > prev.progress + 0.001,
+    freeExit: Boolean(prev.freeExit),
   };
 }
 
@@ -310,9 +336,13 @@ function asScrub(prev: { progress: number; peak: number; closing?: boolean }): S
  * user either leaves the track or starts a clear new open from progress≈0.
  * Touchend settle, rubber-band and visualViewport URL-bar jumps look like
  * increases — they must not raise progress, drop the peak, or remount slices.
+ *
+ * Free-exit: once the user scrolls past the story into the page below, upward
+ * return ignores scrubbing entirely (assembled, no reverse fight). A fresh
+ * open only starts after they are above the track again and scroll down.
  */
 export function advanceScrub(
-  prev: { progress: number; peak: number; closing?: boolean },
+  prev: { progress: number; peak: number; closing?: boolean; freeExit?: boolean },
   raw: number,
   snapClosedOrOpts: number | AdvanceScrubOpts = 0,
 ): ScrubState {
@@ -326,15 +356,38 @@ export function advanceScrub(
   if (progress <= snapClosed) progress = 0;
 
   if (opts.aboveTrack) {
-    return { progress: 0, peak: 0, closing: false };
+    return { progress: 0, peak: 0, closing: false, freeExit: false };
+  }
+
+  if (opts.belowTrack) {
+    // Finished the story and left into the site — next upward pass is free.
+    return { progress: 0, peak: 0, closing: false, freeExit: true };
+  }
+
+  if (prevState.freeExit) {
+    // Reached the intro / top of the track — ready for a fresh open.
+    // (Hero often sits near scrollY=0, so trackTop may never exceed ABOVE_TRACK_PX.)
+    if (progress <= 0.05 || opts.aboveTrack) {
+      if (opts.intentOpen && progress >= 0.015 && !opts.aboveTrack) {
+        return { progress, peak: progress, closing: false, freeExit: false };
+      }
+      return { progress: 0, peak: 0, closing: false, freeExit: false };
+    }
+    // Still scrolling up through the story — stay assembled, no reverse fight.
+    return { progress: 0, peak: 0, closing: false, freeExit: true };
   }
 
   if (progress <= 0 && !prevState.closing && prevState.peak <= 0) {
-    return { progress: 0, peak: 0, closing: false };
+    return { progress: 0, peak: 0, closing: false, freeExit: false };
   }
 
   if (progress <= 0) {
-    return { progress: 0, peak: prevState.peak, closing: prevState.peak > 0 };
+    return {
+      progress: 0,
+      peak: prevState.peak,
+      closing: prevState.peak > 0,
+      freeExit: false,
+    };
   }
 
   const increasing = progress > prevState.progress + 0.0005;
@@ -349,16 +402,22 @@ export function advanceScrub(
       increasing &&
       ((Boolean(opts.intentOpen) && progress >= 0.015) || progress >= bounceGuard);
     if (newOpen) {
-      return { progress, peak: progress, closing: false };
+      return { progress, peak: progress, closing: false, freeExit: false };
     }
     return {
       progress: Math.min(progress, prevState.progress),
       peak: Math.max(prevState.peak, prevState.progress),
       closing: true,
+      freeExit: false,
     };
   }
 
-  return { progress, peak: Math.max(prevState.peak, progress), closing: false };
+  return {
+    progress,
+    peak: Math.max(prevState.peak, progress),
+    closing: false,
+    freeExit: false,
+  };
 }
 
 export type HeroTrackSample = {
@@ -369,26 +428,34 @@ export type HeroTrackSample = {
 };
 
 /** Progress from layout boxes. Sticky pane height stays stable when the URL bar toggles. */
-export function readHeroTrack(sample: HeroTrackSample): { raw: number; aboveTrack: boolean } {
+export function readHeroTrack(sample: HeroTrackSample): {
+  raw: number;
+  aboveTrack: boolean;
+  belowTrack: boolean;
+} {
   const scrollable = Math.max(1, sample.trackHeight - sample.viewportHeight);
+  const trackTop = sample.trackTop;
   return {
-    raw: -sample.trackTop / scrollable,
-    aboveTrack: sample.trackTop > ABOVE_TRACK_PX,
+    raw: -trackTop / scrollable,
+    aboveTrack: trackTop > ABOVE_TRACK_PX,
+    // Past the end of the sticky range — user is in the page content below.
+    belowTrack: trackTop < -scrollable - BELOW_TRACK_PX,
   };
 }
 
 export function applyHeroScrub(
-  prev: { progress: number; peak: number; closing?: boolean },
+  prev: { progress: number; peak: number; closing?: boolean; freeExit?: boolean },
   sample: HeroTrackSample & {
     intentOpen?: boolean;
     bounceGuard?: number;
     snapClosed?: number;
   },
 ): ScrubState {
-  const { raw, aboveTrack } = readHeroTrack(sample);
+  const { raw, aboveTrack, belowTrack } = readHeroTrack(sample);
   const snapped = raw >= 0.985 ? 1 : raw;
   return advanceScrub(prev, snapped, {
     aboveTrack,
+    belowTrack,
     intentOpen: sample.intentOpen,
     bounceGuard: sample.bounceGuard,
     snapClosed: sample.snapClosed,
