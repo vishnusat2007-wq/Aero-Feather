@@ -13,8 +13,8 @@ import {
   getScrollAnim,
   HIGHLIGHT_ZONES,
   isAssembledPose,
-  isReversingPlayback,
-  shouldShowExplodedLayers,
+  isCloseLocked,
+  shouldMountExplodedLayers,
   type HeroStage,
   type ScrubState,
 } from "@/components/store/shuttlecock-scroll-story";
@@ -70,13 +70,20 @@ function ShuttleImage({ className, style }: { className?: string; style?: React.
 
 const INITIAL_SCRUB: ScrubState = { progress: 0, peak: 0, closing: false };
 
-function readTrackSample(el: HTMLElement) {
-  const rect = el.getBoundingClientRect();
+function measureStickyPaneHeight(el: HTMLElement) {
   const stage = el.firstElementChild as HTMLElement | null;
   // Sticky 100svh pane — same units as the 300svh track. window.innerHeight
-  // jumps when Android shows/hides the URL bar and inflates progress.
+  // and visualViewport.height jump when Android shows/hides the URL bar.
+  return stage?.clientHeight || document.documentElement.clientHeight || window.innerHeight;
+}
+
+function readTrackSample(el: HTMLElement, lockedViewportHeight?: number) {
+  const rect = el.getBoundingClientRect();
+  const measured = measureStickyPaneHeight(el);
   const viewportHeight =
-    stage?.clientHeight || document.documentElement.clientHeight || window.innerHeight;
+    lockedViewportHeight && Math.abs(measured - lockedViewportHeight) < 120
+      ? lockedViewportHeight
+      : measured;
   return {
     trackTop: rect.top,
     trackHeight: el.offsetHeight,
@@ -89,6 +96,7 @@ export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Pr
   const scrubRef = useRef<ScrubState>(INITIAL_SCRUB);
   const intentOpenRef = useRef(false);
   const lastTouchYRef = useRef(0);
+  const viewportLockRef = useRef(0);
   const [scrub, setScrub] = useState(INITIAL_SCRUB);
   const reducedMotion = useSyncExternalStore(
     subscribeReducedMotion,
@@ -99,7 +107,13 @@ export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Pr
   const applyProgress = useCallback((intentOpen: boolean) => {
     const el = trackRef.current;
     if (!el) return;
-    const sample = readTrackSample(el);
+    if (viewportLockRef.current < 8) {
+      viewportLockRef.current = measureStickyPaneHeight(el);
+    }
+    const sample = readTrackSample(el, viewportLockRef.current);
+    if (Math.abs(sample.viewportHeight - viewportLockRef.current) >= 120) {
+      viewportLockRef.current = sample.viewportHeight;
+    }
     const next = applyHeroScrub(scrubRef.current, {
       ...sample,
       intentOpen,
@@ -113,16 +127,17 @@ export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Pr
 
   useEffect(() => {
     let raf = 0;
-    const flush = (intentOpen: boolean) => {
+    const flush = (chromeJump = false) => {
       document.documentElement.classList.add("af-hero-scrolling");
+      if (chromeJump) intentOpenRef.current = false;
       if (raf) return;
       raf = requestAnimationFrame(() => {
         raf = 0;
-        applyProgress(intentOpen);
+        applyProgress(intentOpenRef.current);
       });
     };
-    const onScroll = () => flush(intentOpenRef.current);
-    const onResize = () => flush(false);
+    const onScroll = () => flush(false);
+    const onChromeJump = () => flush(true);
     const onWheel = (event: WheelEvent) => {
       intentOpenRef.current = event.deltaY > 0;
     };
@@ -136,20 +151,33 @@ export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Pr
       if (dy < -2) intentOpenRef.current = false;
       lastTouchYRef.current = y;
     };
+    const onTouchEnd = () => {
+      intentOpenRef.current = false;
+      flush(true);
+    };
     applyProgress(false);
     window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onResize);
+    window.addEventListener("resize", onChromeJump);
     window.addEventListener("wheel", onWheel, { passive: true });
     window.addEventListener("touchstart", onTouchStart, { passive: true });
     window.addEventListener("touchmove", onTouchMove, { passive: true });
+    window.addEventListener("touchend", onTouchEnd, { passive: true });
+    window.addEventListener("touchcancel", onTouchEnd, { passive: true });
+    const visualViewport = window.visualViewport;
+    visualViewport?.addEventListener("resize", onChromeJump);
+    visualViewport?.addEventListener("scroll", onChromeJump);
     return () => {
       if (raf) cancelAnimationFrame(raf);
       document.documentElement.classList.remove("af-hero-scrolling");
       window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onResize);
+      window.removeEventListener("resize", onChromeJump);
       window.removeEventListener("wheel", onWheel);
       window.removeEventListener("touchstart", onTouchStart);
       window.removeEventListener("touchmove", onTouchMove);
+      window.removeEventListener("touchend", onTouchEnd);
+      window.removeEventListener("touchcancel", onTouchEnd);
+      visualViewport?.removeEventListener("resize", onChromeJump);
+      visualViewport?.removeEventListener("scroll", onChromeJump);
     };
   }, [applyProgress]);
 
@@ -160,9 +188,16 @@ export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Pr
   );
 
   const effectiveProgress = reducedMotion ? 0.42 : scrub.progress;
+  const closeLocked =
+    !reducedMotion &&
+    isCloseLocked({
+      closing: scrub.closing,
+      progress: effectiveProgress,
+      peak: scrub.peak,
+    });
   const anim = getScrollAnim(
     effectiveProgress,
-    reducedMotion ? undefined : { peak: scrub.peak, closeEnd },
+    reducedMotion ? undefined : { peak: scrub.peak, closeEnd, closing: scrub.closing },
   );
   const chapterIdx = anim.chapter;
   const chapterLocal = anim.local;
@@ -175,12 +210,13 @@ export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Pr
   }, [chapter.num, chapter.label, onStageChange, onChapterChange, chapterIdx]);
 
   const featherScale = 1 + anim.featherSpread;
-  const reversing =
-    !reducedMotion &&
-    (scrub.closing || isReversingPlayback(effectiveProgress, scrub.peak));
   const closed = isAssembledPose(anim);
-  const showExploded = shouldShowExplodedLayers(anim, reversing);
-  const assembledOpacity = getAssembledOpacity(anim, reversing);
+  const showExploded = shouldMountExplodedLayers(anim, {
+    closing: closeLocked,
+    progress: effectiveProgress,
+    peak: scrub.peak,
+  });
+  const assembledOpacity = getAssembledOpacity(anim, closeLocked);
   const gapVisible = showExploded && anim.openAmount > 0.08;
 
   return (
@@ -194,7 +230,9 @@ export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Pr
       data-progress={effectiveProgress.toFixed(3)}
       data-peak={scrub.peak.toFixed(3)}
       data-closing={scrub.closing ? "true" : "false"}
+      data-close-locked={closeLocked ? "true" : "false"}
       data-exploded={showExploded ? "true" : "false"}
+      data-exploded-count={showExploded ? "1" : "0"}
     >
       <div className="sticky top-0 grid h-[100svh] grid-rows-[1fr_auto] overflow-hidden pt-16 lg:overflow-visible lg:pt-4">
         {/* Shuttle stage — centred, kept clear of text zones */}
@@ -241,7 +279,7 @@ export function ShuttlecockScrollShowcase({ onStageChange, onChapterChange }: Pr
               {/* Exploded slices stay unmounted whenever the assembled PNG owns
                   the frame — leftover cork/feather crops cannot sit underneath. */}
               {showExploded && (
-              <div className="absolute inset-0">
+              <div className="absolute inset-0" data-shuttle-slice="exploded">
               {gapVisible && anim.featherLift > 8 && (
                 <div
                   className="pointer-events-none absolute left-1/2 z-0 -translate-x-1/2 rounded border border-af-cyan/30 bg-af-bg/80 px-2 py-0.5 text-[8px] font-bold tracking-widest text-af-cyan uppercase backdrop-blur-sm"

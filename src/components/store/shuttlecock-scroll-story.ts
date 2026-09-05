@@ -172,9 +172,8 @@ export function isReversingPlayback(progress: number, peak: number): boolean {
 
 /**
  * Exploded cork/feather/binding crops and highlight rings.
- * Opening (reversing=false) still peels by openAmount. The instant reverse
- * starts, hide every cropped slice — a 6% crossfade left ghost duplicates
- * under the assembled PNG for the first stretch of close.
+ * Opening (reversing=false) still peels by openAmount. Reverse / close-only
+ * mode never mounts those crops — Android remounts were the mid-close ghosts.
  */
 export function shouldShowExplodedLayers(
   anim: ScrollViewAnim,
@@ -182,6 +181,27 @@ export function shouldShowExplodedLayers(
 ): boolean {
   if (reversing) return false;
   return anim.openAmount > ASSEMBLED_OPEN_AMOUNT;
+}
+
+/** True once close-only mode is latched (progress decreasing or closing flag). */
+export function isCloseLocked(state: {
+  closing?: boolean;
+  progress: number;
+  peak: number;
+}): boolean {
+  return Boolean(state.closing) || isReversingPlayback(state.progress, state.peak);
+}
+
+/**
+ * Mount exploded crops/rings only while opening. Close-only mode uses the
+ * assembled PNG path exclusively — no slices in the DOM at all.
+ */
+export function shouldMountExplodedLayers(
+  anim: ScrollViewAnim,
+  playback: { closing?: boolean; progress: number; peak: number },
+): boolean {
+  if (isCloseLocked(playback)) return false;
+  return shouldShowExplodedLayers(anim, false);
 }
 
 /** True only once the reverse-moving parts are effectively back in place. */
@@ -253,20 +273,26 @@ export type ScrubState = {
 
 export type AdvanceScrubOpts = {
   snapClosed?: number;
-  /** Track is still below the viewport — user is on the copy above the shuttle. */
+  /** Track is clearly below the viewport — user left the shuttle for the copy. */
   aboveTrack?: boolean;
   /** User is actively opening (finger/wheel moving the page down). */
   intentOpen?: boolean;
   /**
-   * Finger-up / URL-bar increases past this still keep the close peak.
-   * Larger than a typical Android overscroll (~0.09) so bounce cannot
-   * re-enter getForwardAnim. Intentional opens pass intentOpen instead.
+   * No-touch reopen from an assembled pose. Must be well past Android
+   * rubber-band (~0.09) and URL-bar jumps (~0.06). Intentional opens
+   * pass intentOpen instead and may reopen from progress≈0 sooner.
    */
   bounceGuard?: number;
 };
 
-/** Ignore no-touch reopen until well past Android rubber-band distance (~0.09). */
-export const FALLBACK_REOPEN = 0.28;
+/** Ignore no-touch reopen until the user has clearly entered the open track. */
+export const FALLBACK_REOPEN = 0.4;
+
+/** Rubber-band / URL-bar can push the track a few dozen px; that is not "left". */
+export const ABOVE_TRACK_PX = 96;
+
+/** A new open is only allowed from the assembled intro, not mid-rewind. */
+export const REOPEN_FROM_PROGRESS = CLOSED_PROGRESS;
 
 function asScrub(prev: { progress: number; peak: number; closing?: boolean }): ScrubState {
   return {
@@ -279,10 +305,11 @@ function asScrub(prev: { progress: number; peak: number; closing?: boolean }): S
 /**
  * High-water peak since the last confirmed session end.
  *
- * Do NOT reset peak at progress 0. Android touchend-settle, rubber-band and
- * URL-bar resize all dip to 0 then bounce to 0.12–0.22. Resetting the peak
- * makes that bounce `getForwardAnim(0.22)` — chapter-1 explode under the PNG.
- * Peak clears only when the user is above the track, or they start a new open.
+ * Close-only lock: the first decreasing sample latches `closing`. After that,
+ * progress is monotonic-down until the shuttle is assembled again and the
+ * user either leaves the track or starts a clear new open from progress≈0.
+ * Touchend settle, rubber-band and visualViewport URL-bar jumps look like
+ * increases — they must not raise progress, drop the peak, or remount slices.
  */
 export function advanceScrub(
   prev: { progress: number; peak: number; closing?: boolean },
@@ -298,7 +325,11 @@ export function advanceScrub(
   let progress = clamp01(raw);
   if (progress <= snapClosed) progress = 0;
 
-  if (opts.aboveTrack || (progress <= 0 && !prevState.closing && prevState.peak <= 0)) {
+  if (opts.aboveTrack) {
+    return { progress: 0, peak: 0, closing: false };
+  }
+
+  if (progress <= 0 && !prevState.closing && prevState.peak <= 0) {
     return { progress: 0, peak: 0, closing: false };
   }
 
@@ -308,22 +339,23 @@ export function advanceScrub(
 
   const increasing = progress > prevState.progress + 0.0005;
   const decreasing = progress < prevState.progress - 0.0005;
-  const closing = prevState.closing || prevState.peak > prevState.progress + 0.001;
+  const closing =
+    prevState.closing || prevState.peak > prevState.progress + 0.001 || decreasing;
 
-  if (decreasing) {
-    return { progress, peak: Math.max(prevState.peak, prevState.progress, progress), closing: true };
-  }
-
-  if (closing && increasing) {
-    // Mid-rewind (0.50 → 0.55) keeps the peak and stays on the reverse blend.
-    // Only a new open FROM the start pose may drop the peak.
-    const fromStart = prevState.progress <= CLOSED_PROGRESS;
-    const reopen =
-      fromStart && (Boolean(opts.intentOpen) || progress >= bounceGuard);
-    if (reopen) {
+  if (closing) {
+    const assembled = prevState.progress <= REOPEN_FROM_PROGRESS;
+    const newOpen =
+      assembled &&
+      increasing &&
+      ((Boolean(opts.intentOpen) && progress >= 0.015) || progress >= bounceGuard);
+    if (newOpen) {
       return { progress, peak: progress, closing: false };
     }
-    return { progress, peak: prevState.peak, closing: true };
+    return {
+      progress: Math.min(progress, prevState.progress),
+      peak: Math.max(prevState.peak, prevState.progress),
+      closing: true,
+    };
   }
 
   return { progress, peak: Math.max(prevState.peak, progress), closing: false };
@@ -341,7 +373,7 @@ export function readHeroTrack(sample: HeroTrackSample): { raw: number; aboveTrac
   const scrollable = Math.max(1, sample.trackHeight - sample.viewportHeight);
   return {
     raw: -sample.trackTop / scrollable,
-    aboveTrack: sample.trackTop > 1,
+    aboveTrack: sample.trackTop > ABOVE_TRACK_PX,
   };
 }
 
@@ -387,6 +419,8 @@ function blendToClosed(from: ScrollViewAnim, amount: number): ScrollViewAnim {
 export type ScrollPlayback = {
   peak?: number;
   closeEnd?: number;
+  /** Latched close-only mode — never take the forward explode path. */
+  closing?: boolean;
 };
 
 /** Lift values in px — tuned for ~400px-wide stage */
@@ -467,17 +501,22 @@ export function getForwardAnim(progress: number): ScrollViewAnim {
 }
 
 /**
- * Pose is a function of (progress, peak) — not a noisy scroll direction flag.
- * Climbing or at the crest uses the opening story unchanged. Below the peak,
- * blend that crest pose back to assembled. Chapter 4 never reaches closed on
- * its own, but a 0.003 direction flip must not jump to an exploded chapter.
+ * Pose is a function of (progress, peak, closing) — not a noisy scroll direction
+ * flag. Climbing or at the crest uses the opening story unchanged. Once close
+ * is latched, always blend the frozen crest pose back to assembled — never
+ * `getForwardAnim(progress)`, even if a URL-bar jump reports p >= peak.
  */
 export function getScrollAnim(progress: number, playback: ScrollPlayback = {}): ScrollViewAnim {
   const p = clamp01(progress);
   const peak = clamp01(playback.peak ?? p);
+  const locked = Boolean(playback.closing) || p < peak - 0.0005;
+
   if (p <= 0 || isFullyClosed(p)) return closedAnim();
-  if (p >= peak) return getForwardAnim(p);
-  const closeAmount = getReverseCloseAmount(p, peak, playback.closeEnd);
+  if (!locked) return getForwardAnim(p);
+
+  const crest = peak > CLOSED_PROGRESS ? peak : p;
+  if (crest <= CLOSED_PROGRESS) return closedAnim();
+  const closeAmount = getReverseCloseAmount(p, crest, playback.closeEnd);
   if (closeAmount >= 1) return closedAnim();
-  return blendToClosed(getForwardAnim(peak), closeAmount);
+  return blendToClosed(getForwardAnim(crest), closeAmount);
 }

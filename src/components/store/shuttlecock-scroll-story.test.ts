@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+  ABOVE_TRACK_PX,
+  FALLBACK_REOPEN,
   REVERSE_CLOSE_END_MOBILE,
   advanceScrub,
   applyHeroScrub,
@@ -10,9 +12,11 @@ import {
   getReverseCloseAmount,
   getScrollAnim,
   isAssembledPose,
+  isCloseLocked,
   isFullyClosed,
   isReversingPlayback,
   readHeroTrack,
+  shouldMountExplodedLayers,
   shouldShowExplodedLayers,
 } from "./shuttlecock-scroll-story.ts";
 
@@ -84,19 +88,25 @@ describe("reverse close returns to the assembled start pose", () => {
     let scrub = { progress: 0, peak: 0 };
     for (const raw of [0.2, 0.5, 0.8, 1]) scrub = advanceScrub(scrub, raw);
 
-    const closing = getScrollAnim(0.5, { peak: scrub.peak, ...mobile });
+    const closing = getScrollAnim(0.5, { peak: scrub.peak, closing: true, ...mobile });
     scrub = advanceScrub(scrub, 0.5);
     const jittered = advanceScrub(scrub, 0.504);
-    const afterJitter = getScrollAnim(jittered.progress, { peak: jittered.peak, ...mobile });
+    const afterJitter = getScrollAnim(jittered.progress, {
+      peak: jittered.peak,
+      closing: jittered.closing,
+      ...mobile,
+    });
 
     assert.equal(jittered.peak, 1);
+    assert.equal(jittered.progress, 0.5);
+    assert.equal(jittered.closing, true);
     assert.ok(closing.openAmount < 0.2, "mid-reverse should already be mostly closed");
     assert.ok(
-      afterJitter.openAmount < 0.25,
+      afterJitter.openAmount <= closing.openAmount + 1e-9,
       `jitter exploded the shuttle: openAmount=${afterJitter.openAmount}`,
     );
-    assert.ok(afterJitter.featherLift < 20, `jitter featherLift=${afterJitter.featherLift}`);
-    assert.ok(!shouldShowExplodedLayers(afterJitter) || afterJitter.openAmount <= closing.openAmount + 0.05);
+    assert.ok(afterJitter.featherLift <= closing.featherLift + 1e-9);
+    assert.equal(false, shouldMountExplodedLayers(afterJitter, jittered));
   });
 
   it("never shows exploded slices once the assembled PNG is opaque", () => {
@@ -192,7 +202,12 @@ describe("Android close bounce cannot re-explode", () => {
     const closed = openThenCloseToZero();
     for (const bounce of [0.04, 0.08, 0.09, 0.12, 0.15, 0.2]) {
       const next = advanceScrub(closed, bounce);
-      const anim = pose(next.progress, next.peak);
+      const anim = getScrollAnim(next.progress, {
+        peak: next.peak,
+        closing: next.closing,
+        ...mobile,
+      });
+      assert.equal(next.progress, 0, `bounce ${bounce} raised progress`);
       assert.equal(next.peak, 1, `bounce ${bounce} dropped the peak`);
       assert.equal(next.closing, true);
       assert.ok(
@@ -203,6 +218,7 @@ describe("Android close bounce cannot re-explode", () => {
       assert.ok(anim.bindingLift < 2);
       assert.equal(true, isAssembledPose(anim));
       assert.equal(false, shouldShowExplodedLayers(anim));
+      assert.equal(false, shouldMountExplodedLayers(anim, next));
     }
   });
 
@@ -225,14 +241,20 @@ describe("Android close bounce cannot re-explode", () => {
     let scrub = { progress: 0, peak: 0, closing: false };
     for (const raw of [0.4, 0.8, 1, 0.5]) scrub = advanceScrub(scrub, raw);
     const resumed = advanceScrub(scrub, 0.55, { intentOpen: true });
-    const anim = pose(resumed.progress, resumed.peak);
+    const anim = getScrollAnim(resumed.progress, {
+      peak: resumed.peak,
+      closing: resumed.closing,
+      ...mobile,
+    });
     const exploded = getForwardAnim(0.55);
     assert.equal(resumed.peak, 1);
+    assert.equal(resumed.progress, 0.5);
     assert.equal(resumed.closing, true);
     assert.ok(
       anim.openAmount < exploded.openAmount * 0.5,
       `mid-rewind resume exploded: open=${anim.openAmount} forward=${exploded.openAmount}`,
     );
+    assert.equal(false, shouldMountExplodedLayers(anim, resumed));
   });
 
   it("starts a fresh forward open when the user intends to open from the start", () => {
@@ -302,6 +324,144 @@ describe("hero track progress is stable when the URL bar toggles", () => {
     const forward = getForwardAnim(scrub.progress);
     assert.equal(anim.openAmount, forward.openAmount);
     assert.equal(anim.featherLift, forward.featherLift);
+  });
+});
+
+describe("reverse-mode lock stays assembled-PNG-only while closing", () => {
+  function openThenStartClose() {
+    let scrub = { progress: 0, peak: 0, closing: false };
+    for (const raw of [0.2, 0.5, 0.8, 1, 0.72]) {
+      scrub = advanceScrub(scrub, raw);
+    }
+    return scrub;
+  }
+
+  it("latches closing on the first reverse sample and ignores later increases", () => {
+    const locked = openThenStartClose();
+    assert.equal(locked.closing, true);
+    assert.equal(locked.peak, 1);
+    assert.equal(true, isCloseLocked(locked));
+
+    for (const bump of [0.73, 0.8, 0.95, 1]) {
+      const next = advanceScrub(locked, bump, { intentOpen: true });
+      assert.equal(next.closing, true, `bump ${bump} dropped the lock`);
+      assert.equal(next.progress, locked.progress);
+      assert.equal(next.peak, 1);
+    }
+  });
+
+  it("keeps closing=true when progress is unchanged (pause mid-close)", () => {
+    const locked = openThenStartClose();
+    const paused = advanceScrub(locked, locked.progress);
+    assert.deepEqual(paused, locked);
+    assert.equal(paused.closing, true);
+  });
+
+  it("never mounts exploded layers on any reverse-mode frame", () => {
+    let scrub = { progress: 0, peak: 0, closing: false };
+    for (const raw of [0.15, 0.4, 0.7, 1]) scrub = advanceScrub(scrub, raw);
+    const crestAnim = getForwardAnim(1);
+    assert.equal(true, shouldMountExplodedLayers(crestAnim, scrub));
+    scrub = advanceScrub(scrub, 0.999);
+    assert.equal(scrub.closing, true);
+    assert.equal(false, shouldMountExplodedLayers(crestAnim, scrub));
+    for (let p = 0.95; p >= 0; p = Math.round((p - 0.05) * 100) / 100) {
+      scrub = advanceScrub(scrub, p);
+      const anim = getScrollAnim(scrub.progress, {
+        peak: scrub.peak,
+        closing: scrub.closing,
+        ...mobile,
+      });
+      assert.equal(scrub.closing, true, `lost lock at p=${p}`);
+      assert.equal(
+        false,
+        shouldMountExplodedLayers(anim, scrub),
+        `exploded layers mounted at p=${p} open=${anim.openAmount}`,
+      );
+      assert.equal(false, shouldShowExplodedLayers(anim, true));
+      assert.equal(1, getAssembledOpacity(anim, true));
+    }
+  });
+
+  it("getScrollAnim closing=true never takes the forward explode path if p > peak", () => {
+    const forward = getForwardAnim(0.55);
+    const locked = getScrollAnim(0.55, { peak: 0.3, closing: true, ...mobile });
+    assert.ok(
+      locked.openAmount < forward.openAmount,
+      `closing with p>peak used forward explode: ${locked.openAmount}`,
+    );
+    assert.equal(false, shouldMountExplodedLayers(locked, { closing: true, progress: 0.55, peak: 0.3 }));
+  });
+
+  it("touchend settle 0 then URL-bar / rubber-band jumps stay locked and slice-free", () => {
+    let scrub = { progress: 0, peak: 0, closing: false };
+    for (const raw of [0.25, 0.6, 1, 0.4, 0.1, 0]) scrub = advanceScrub(scrub, raw);
+    assert.deepEqual(scrub, { progress: 0, peak: 1, closing: true });
+
+    for (const jump of [0.03, 0.09, 0.15, 0.22, 0.28, 0.35]) {
+      const next = advanceScrub(scrub, jump);
+      const anim = getScrollAnim(next.progress, {
+        peak: next.peak,
+        closing: next.closing,
+        ...mobile,
+      });
+      assert.equal(next.progress, 0, `jump ${jump} raised progress`);
+      assert.equal(next.peak, 1);
+      assert.equal(next.closing, true);
+      assert.equal(true, isAssembledPose(anim));
+      assert.equal(false, shouldMountExplodedLayers(anim, next));
+    }
+  });
+
+  it("only a clear new open from progress≈0 with intent leaves the lock", () => {
+    let scrub = { progress: 0, peak: 1, closing: true };
+    scrub = advanceScrub(scrub, 0.18, { intentOpen: true });
+    assert.equal(scrub.closing, false);
+    assert.equal(scrub.peak, 0.18);
+    const anim = getScrollAnim(scrub.progress, { peak: scrub.peak, ...mobile });
+    const forward = getForwardAnim(0.18);
+    assert.equal(anim.openAmount, forward.openAmount);
+    assert.equal(true, shouldMountExplodedLayers(anim, scrub));
+  });
+
+  it("a no-touch jump below FALLBACK_REOPEN from 0 does not reopen", () => {
+    const closed = { progress: 0, peak: 1, closing: true };
+    const bounced = advanceScrub(closed, FALLBACK_REOPEN - 0.02);
+    assert.equal(bounced.closing, true);
+    assert.equal(bounced.progress, 0);
+    assert.equal(bounced.peak, 1);
+  });
+});
+
+describe("rubber-band trackTop is not above-track", () => {
+  it("treats small positive trackTop as still on the shuttle", () => {
+    for (const top of [2, 8, 24, 48, 80, ABOVE_TRACK_PX]) {
+      const sample = readHeroTrack({
+        trackTop: top,
+        trackHeight: 300 * 844,
+        viewportHeight: 844,
+      });
+      assert.equal(sample.aboveTrack, false, `trackTop ${top} ended the session`);
+    }
+  });
+
+  it("applyHeroScrub: 12–80px rubber-band after close keeps the lock", () => {
+    const trackHeight = 300 * 844;
+    const viewportHeight = 844;
+    let scrub = { progress: 0, peak: 1, closing: true };
+    for (const top of [12, 40, 80]) {
+      scrub = applyHeroScrub(scrub, { trackTop: top, trackHeight, viewportHeight });
+      assert.equal(scrub.closing, true, `trackTop ${top} cleared closing`);
+      assert.equal(scrub.peak, 1, `trackTop ${top} dropped the peak`);
+    }
+  });
+
+  it("applyHeroScrub: clearly above the track still ends the session", () => {
+    const ended = applyHeroScrub(
+      { progress: 0, peak: 1, closing: true },
+      { trackTop: ABOVE_TRACK_PX + 40, trackHeight: 300 * 844, viewportHeight: 844 },
+    );
+    assert.deepEqual(ended, { progress: 0, peak: 0, closing: false });
   });
 });
 
