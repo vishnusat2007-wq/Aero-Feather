@@ -2,8 +2,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { notFound } from "next/navigation";
-import { AddToCartButton } from "@/components/store/add-to-cart-button";
 import { LogoMark } from "@/components/store/logo";
+import { PurchaseButtons } from "@/components/store/purchase-buttons";
 import { Badge } from "@/components/ui/badge";
 import { formatPrice } from "@/lib/format";
 import { getProductBySlug } from "@/lib/data";
@@ -76,7 +76,7 @@ export default async function ProductPage({
 
           <div className="mt-8 border-t border-af-cyan/10 pt-8">
             {product.stock > 0 ? (
-              <AddToCartButton product={product} />
+              <PurchaseButtons product={product} />
             ) : (
               <p className="font-medium text-red-400">Out of stock</p>
             )}

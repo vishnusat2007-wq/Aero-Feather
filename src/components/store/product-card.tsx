@@ -99,23 +99,33 @@ export function ProductCard({ product, featured = false }: { product: Product; f
               </p>
             )}
           </div>
-          <Button
-            variant="primary"
-            size="sm"
-            disabled={product.stock === 0}
-            onClick={() =>
-              addItem({
-                productId: product.id,
-                slug: product.slug,
-                name: product.name,
-                priceCents: product.price_cents,
-                imageUrl: product.image_url,
-              })
-            }
-          >
-            <Plus className="h-4 w-4" />
-            Add to Cart
-          </Button>
+          <div className="flex flex-col items-stretch gap-2 sm:items-end">
+            <Button
+              variant="primary"
+              size="sm"
+              disabled={product.stock === 0}
+              asChild
+            >
+              <Link href={`/shop/${product.slug}`}>Buy Now</Link>
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={product.stock === 0}
+              onClick={() =>
+                addItem({
+                  productId: product.id,
+                  slug: product.slug,
+                  name: product.name,
+                  priceCents: product.price_cents,
+                  imageUrl: product.image_url,
+                })
+              }
+            >
+              <Plus className="h-4 w-4" />
+              Add to Cart
+            </Button>
+          </div>
         </div>
       </div>
     </article>

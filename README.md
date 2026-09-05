@@ -22,9 +22,9 @@ cp .env.example .env.local
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase publishable/anon key |
 | `SUPABASE_SERVICE_ROLE_KEY` | Server-only — checkout, webhooks, profile bootstrap |
-| `STRIPE_SECRET_KEY` | Stripe secret key |
-| `STRIPE_WEBHOOK_SECRET` | Stripe webhook signing secret |
-| `NEXT_PUBLIC_APP_URL` | e.g. `http://localhost:3000` |
+| `STRIPE_SECRET_KEY` | Stripe secret key (`rk_test_…` / `rk_live_…` preferred) |
+| `STRIPE_WEBHOOK_SECRET` | Stripe webhook signing secret (`whsec_…`) |
+| `NEXT_PUBLIC_APP_URL` | e.g. `http://localhost:3000` or `https://aero-feather.vercel.app` |
 | `ADMIN_EMAIL` | **Your email** — only this account gets admin access |
 
 ### 2. Supabase setup
@@ -61,9 +61,16 @@ Only the `ADMIN_EMAIL` account is promoted to admin. All other signups are custo
 | `/account` | Profile & order history |
 | `/admin` | Store management (admin role only) |
 
-## Stripe webhook
+## Stripe setup
 
-Point Stripe to `https://your-domain.com/api/webhooks/stripe` for `checkout.session.completed`.
+1. Add `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` in Vercel → Project → Settings → Environment Variables (Production + Preview).
+2. Set `NEXT_PUBLIC_APP_URL=https://aero-feather.vercel.app` (no trailing slash).
+3. In Stripe Dashboard → Developers → Webhooks, add:
+   - URL: `https://aero-feather.vercel.app/api/webhooks/stripe`
+   - Event: `checkout.session.completed`
+4. Redeploy after saving env vars.
+
+Checkout collects EUR, Irish/EU shipping address, phone, and applies free delivery at €75+.
 
 ## Manual admin promotion (optional)
 
