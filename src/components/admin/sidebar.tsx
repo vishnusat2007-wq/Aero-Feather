@@ -61,7 +61,7 @@ function NavLink({
         "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition",
         active
           ? "bg-af-cyan text-[#060b18] shadow-[0_0_20px_rgba(32,182,232,0.25)]"
-          : "text-slate-300 hover:bg-white/8 hover:text-white",
+          : "text-af-muted hover:bg-af-surface hover:text-af-text",
       )}
     >
       <Icon className="h-4 w-4" />
@@ -97,11 +97,11 @@ export function AdminSidebar({
   return (
     <aside
       className={cn(
-        "flex w-64 shrink-0 flex-col border-r border-white/10 bg-[#050a14] text-white",
+        "flex w-64 shrink-0 flex-col border-r border-af-border bg-af-bg-secondary text-af-text",
         className,
       )}
     >
-      <div className="border-b border-white/10 px-5 py-5">
+      <div className="border-b border-af-border px-5 py-5">
         <div className="flex items-center gap-3">
           <LogoMark size={40} />
           <div className="min-w-0 flex-1">
@@ -139,8 +139,8 @@ export function AdminSidebar({
             className={cn(
               "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition",
               maintenanceEnabled
-                ? "bg-amber-500/15 text-amber-300"
-                : "text-slate-300 hover:bg-white/8 hover:text-white",
+                ? "bg-amber-500/15 text-amber-800 dark:text-amber-300"
+                : "text-af-muted hover:bg-af-surface hover:text-af-text",
             )}
           >
             <Wrench className="h-4 w-4" />
@@ -152,18 +152,18 @@ export function AdminSidebar({
         </Section>
       </nav>
 
-      <div className="space-y-2 border-t border-white/10 p-3">
+      <div className="space-y-2 border-t border-af-border p-3">
         <div className="flex items-center justify-between px-1 py-1">
           <p className="text-[10px] font-semibold tracking-[0.18em] text-af-cyan/70 uppercase">
             Appearance
           </p>
           <ThemeToggle />
         </div>
-        <SignOutButton className="h-10 w-full justify-center border-white/15 bg-white/5 text-slate-100 hover:border-white/30 hover:bg-white/10 hover:text-white" />
+        <SignOutButton className="h-10 w-full justify-center" />
         <Link
           href="/"
           onClick={onNavigate}
-          className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-400 transition hover:bg-white/8 hover:text-white"
+          className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-af-muted transition hover:bg-af-surface hover:text-af-text"
         >
           <Store className="h-4 w-4" />
           View store

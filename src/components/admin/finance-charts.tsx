@@ -8,11 +8,11 @@ export function RevenueBarChart({ data }: { data: MonthBucket[] }) {
   const max = Math.max(...data.map((d) => d.revenueCents), 1);
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-[#0d1a34] p-6">
+    <div className="rounded-2xl border border-af-border bg-af-surface p-6">
       <div className="mb-6 flex items-end justify-between">
         <div>
-          <h2 className="text-lg font-bold text-white">Revenue by month</h2>
-          <p className="text-sm text-slate-400">Last 6 months · paid & fulfilled orders</p>
+          <h2 className="text-lg font-bold text-af-text">Revenue by month</h2>
+          <p className="text-sm text-af-muted">Last 6 months · paid & fulfilled orders</p>
         </div>
       </div>
       <div className="flex h-52 items-end gap-3">
@@ -23,14 +23,14 @@ export function RevenueBarChart({ data }: { data: MonthBucket[] }) {
               <p className="text-[10px] font-medium text-af-cyan">
                 {m.revenueCents > 0 ? formatPrice(m.revenueCents) : "—"}
               </p>
-              <div className="flex h-40 w-full items-end rounded-t-md bg-white/5 px-1">
+              <div className="flex h-40 w-full items-end rounded-t-md bg-af-bg px-1">
                 <div
                   className="w-full rounded-t-md bg-gradient-to-t from-af-blue to-af-cyan transition-all"
                   style={{ height: `${height}%` }}
                   title={`${m.label}: ${formatPrice(m.revenueCents)} · ${m.orderCount} orders`}
                 />
               </div>
-              <p className="text-[11px] text-slate-400">{m.label}</p>
+              <p className="text-[11px] text-af-muted">{m.label}</p>
             </div>
           );
         })}
@@ -70,12 +70,12 @@ export function StatusDonutChart({ data }: { data: StatusBucket[] }) {
   }, []);
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-[#0d1a34] p-6">
-      <h2 className="text-lg font-bold text-white">Orders by status</h2>
-      <p className="mb-6 text-sm text-slate-400">Pipeline breakdown</p>
+    <div className="rounded-2xl border border-af-border bg-af-surface p-6">
+      <h2 className="text-lg font-bold text-af-text">Orders by status</h2>
+      <p className="mb-6 text-sm text-af-muted">Pipeline breakdown</p>
 
       {data.length === 0 ? (
-        <p className="text-sm text-slate-500">No orders yet — charts will fill as sales come in.</p>
+        <p className="text-sm text-af-muted">No orders yet — charts will fill as sales come in.</p>
       ) : (
         <div className="flex flex-col items-center gap-6 sm:flex-row">
           <svg viewBox="0 0 36 36" className="h-40 w-40 -rotate-90">
@@ -84,7 +84,7 @@ export function StatusDonutChart({ data }: { data: StatusBucket[] }) {
               cy="18"
               r="15.915"
               fill="transparent"
-              stroke="rgba(255,255,255,0.06)"
+              stroke="var(--af-border)"
               strokeWidth="3.5"
             />
             {segments.map((s) => (
@@ -104,14 +104,14 @@ export function StatusDonutChart({ data }: { data: StatusBucket[] }) {
           <ul className="w-full space-y-2 text-sm">
             {segments.map((s) => (
               <li key={s.status} className="flex items-center justify-between gap-3">
-                <span className="flex items-center gap-2 text-slate-300">
+                <span className="flex items-center gap-2 text-af-muted">
                   <span
                     className="h-2.5 w-2.5 rounded-full"
                     style={{ background: s.color }}
                   />
                   {formatOrderStatus(s.status)}
                 </span>
-                <span className="tabular-nums text-white">
+                <span className="tabular-nums text-af-text">
                   {s.count} · {formatPrice(s.revenueCents)}
                 </span>
               </li>

@@ -22,15 +22,15 @@ export default async function AdminProfilePage() {
         <p className="text-[11px] font-semibold tracking-[0.2em] text-af-cyan uppercase">
           Settings
         </p>
-        <h1 className="mt-1 text-3xl font-bold text-white">Profile</h1>
-        <p className="mt-1 text-slate-400">{user.email}</p>
+        <h1 className="mt-1 text-3xl font-bold text-af-text">Profile</h1>
+        <p className="mt-1 text-af-muted">{user.email}</p>
         <div className="mt-4">
-          <SignOutButton className="border-white/15 bg-white/5 text-slate-100 hover:border-white/30 hover:bg-white/10 hover:text-white" />
+          <SignOutButton />
         </div>
       </div>
 
-      <section className="rounded-2xl border border-white/10 bg-[#0d1a34] p-6">
-        <h2 className="mb-4 text-lg font-bold text-white">Account details</h2>
+      <section className="rounded-2xl border border-af-border bg-af-surface p-6">
+        <h2 className="mb-4 text-lg font-bold text-af-text">Account details</h2>
         <form action={updateProfileAction} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="full_name">Full name</Label>
@@ -39,7 +39,6 @@ export default async function AdminProfilePage() {
               name="full_name"
               defaultValue={profile?.full_name ?? ""}
               placeholder="Your name"
-              className="border-white/10 bg-[#060b18] text-white"
             />
           </div>
           <div className="space-y-2">
@@ -50,7 +49,6 @@ export default async function AdminProfilePage() {
               type="tel"
               defaultValue={profile?.phone ?? ""}
               placeholder="+353 …"
-              className="border-white/10 bg-[#060b18] text-white"
             />
           </div>
           <Button type="submit" variant="cyan" size="sm">
@@ -59,9 +57,9 @@ export default async function AdminProfilePage() {
         </form>
       </section>
 
-      <section className="rounded-2xl border border-white/10 bg-[#0d1a34] p-6">
-        <h2 className="mb-2 text-lg font-bold text-white">Password</h2>
-        <p className="mb-4 text-sm text-slate-400">
+      <section className="rounded-2xl border border-af-border bg-af-surface p-6">
+        <h2 className="mb-2 text-lg font-bold text-af-text">Password</h2>
+        <p className="mb-4 text-sm text-af-muted">
           Change your admin sign-in password. Use at least 6 characters.
         </p>
         <ChangePasswordForm />

@@ -74,7 +74,7 @@ export function AdminShell({ children, maintenanceEnabled = false }: Props) {
   }, []);
 
   return (
-    <div className="af-admin flex min-h-screen bg-[#060b18] text-slate-100">
+    <div className="flex min-h-screen bg-af-bg text-af-text">
       <div className="hidden md:flex md:min-h-screen">
         <AdminSidebar maintenanceEnabled={maintenanceEnabled} />
       </div>
@@ -113,7 +113,7 @@ export function AdminShell({ children, maintenanceEnabled = false }: Props) {
                 type="button"
                 aria-label="Close admin menu"
                 onClick={() => setMobileOpen(false)}
-                className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-300 transition hover:bg-white/8 hover:text-white"
+                className="flex h-9 w-9 items-center justify-center rounded-lg text-af-muted transition hover:bg-af-surface hover:text-af-text"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -124,7 +124,7 @@ export function AdminShell({ children, maintenanceEnabled = false }: Props) {
       </div>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-white/10 bg-[#050a14]/95 px-3 py-3 backdrop-blur-md md:hidden">
+        <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-af-border bg-af-bg-secondary/95 px-3 py-3 backdrop-blur-md md:hidden">
           <button
             ref={openButtonRef}
             type="button"
@@ -132,7 +132,7 @@ export function AdminShell({ children, maintenanceEnabled = false }: Props) {
             aria-expanded={mobileOpen}
             aria-controls={drawerId}
             onClick={() => setMobileOpen(true)}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-slate-200 transition hover:bg-white/8 hover:text-white"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-af-text transition hover:bg-af-surface hover:text-af-cyan"
           >
             <Menu className="h-5 w-5" />
           </button>
@@ -142,10 +142,7 @@ export function AdminShell({ children, maintenanceEnabled = false }: Props) {
             <p className="truncate text-sm font-bold">{titleForPath(pathname)}</p>
           </div>
           <ThemeToggle />
-          <SignOutButton
-            label="Logout"
-            className="h-9 border-white/15 bg-white/5 px-2.5 text-slate-100 hover:border-white/30 hover:bg-white/10 hover:text-white"
-          />
+          <SignOutButton label="Logout" className="h-9 px-2.5" />
         </header>
 
         <div className="min-w-0 flex-1 overflow-auto p-4 sm:p-6 md:p-10">{children}</div>

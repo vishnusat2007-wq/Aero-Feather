@@ -16,8 +16,8 @@ export default async function AdminProductsPage() {
           <p className="text-[11px] font-semibold tracking-[0.2em] text-af-cyan uppercase">
             Website Manager
           </p>
-          <h1 className="mt-1 text-3xl font-bold text-white">Products</h1>
-          <p className="mt-1 text-slate-400">{products.length} products in catalogue</p>
+          <h1 className="mt-1 text-3xl font-bold text-af-text">Products</h1>
+          <p className="mt-1 text-af-muted">{products.length} products in catalogue</p>
         </div>
         <Button variant="cyan" asChild>
           <Link href="/admin/products/new">
@@ -27,9 +27,9 @@ export default async function AdminProductsPage() {
         </Button>
       </div>
 
-      <div className="overflow-x-auto rounded-2xl border border-white/10 bg-[#0d1a34]">
+      <div className="overflow-x-auto rounded-2xl border border-af-border bg-af-surface">
         <table className="w-full text-sm">
-          <thead className="bg-white/5 text-left text-slate-400">
+          <thead className="bg-af-bg-secondary text-left text-af-muted">
             <tr>
               <th className="px-4 py-3">Name</th>
               <th className="px-4 py-3">Price</th>
@@ -40,13 +40,13 @@ export default async function AdminProductsPage() {
           </thead>
           <tbody>
             {products.map((product) => (
-              <tr key={product.id} className="border-t border-white/5">
+              <tr key={product.id} className="border-t border-af-border">
                 <td className="px-4 py-3">
-                  <p className="font-medium text-white">{product.name}</p>
-                  <p className="text-xs text-slate-500">{product.slug}</p>
+                  <p className="font-medium text-af-text">{product.name}</p>
+                  <p className="text-xs text-af-muted">{product.slug}</p>
                 </td>
-                <td className="px-4 py-3 text-slate-200">{formatPrice(product.price_cents)}</td>
-                <td className="px-4 py-3 text-slate-200">{product.stock}</td>
+                <td className="px-4 py-3 text-af-text">{formatPrice(product.price_cents)}</td>
+                <td className="px-4 py-3 text-af-text">{product.stock}</td>
                 <td className="px-4 py-3">
                   <Badge variant={product.active ? "cyan" : "outline"}>
                     {product.active ? "Active" : "Hidden"}
