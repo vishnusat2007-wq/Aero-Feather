@@ -8,6 +8,15 @@ export function isSupabaseConfigured() {
   );
 }
 
+export async function getSignedInEmail() {
+  if (!isSupabaseConfigured()) return "";
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  return user?.email ?? "";
+}
+
 export async function createClient() {
   const cookieStore = await cookies();
 

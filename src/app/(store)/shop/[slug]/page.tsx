@@ -2,11 +2,12 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { notFound } from "next/navigation";
-import { AddToCartButton } from "@/components/store/add-to-cart-button";
+import { PurchaseButtons } from "@/components/store/purchase-buttons";
 import { LogoMark } from "@/components/store/logo";
 import { Badge } from "@/components/ui/badge";
 import { formatPrice } from "@/lib/format";
 import { getProductBySlug } from "@/lib/data";
+import { getSignedInEmail } from "@/lib/supabase/server";
 
 export default async function ProductPage({
   params,
@@ -14,7 +15,10 @@ export default async function ProductPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const product = await getProductBySlug(slug);
+  const [product, checkoutEmail] = await Promise.all([
+    getProductBySlug(slug),
+    getSignedInEmail(),
+  ]);
   if (!product) notFound();
 
   const specs = Object.entries(product.specs ?? {});
@@ -76,7 +80,7 @@ export default async function ProductPage({
 
           <div className="mt-8 border-t border-af-cyan/10 pt-8">
             {product.stock > 0 ? (
-              <AddToCartButton product={product} />
+              <PurchaseButtons product={product} initialEmail={checkoutEmail} />
             ) : (
               <p className="font-medium text-red-400">Out of stock</p>
             )}

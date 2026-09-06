@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/input";
 import { formatPrice } from "@/lib/format";
 import { useCartStore } from "@/lib/cart-store";
+import { startStripeCheckout } from "@/lib/start-checkout";
 
 export function CartClient({ initialEmail = "" }: { initialEmail?: string }) {
   const { items, updateQuantity, removeItem, totalCents } = useCartStore();
@@ -25,16 +26,7 @@ export function CartClient({ initialEmail = "" }: { initialEmail?: string }) {
         throw new Error("Enter a valid email for your order confirmation.");
       }
 
-      const res = await fetch("/api/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items, email: trimmed }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Checkout failed");
-      if (!data.url) throw new Error("Stripe Checkout did not return a URL.");
-
-      window.location.href = data.url;
+      await startStripeCheckout(items, trimmed);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Checkout failed");
     } finally {

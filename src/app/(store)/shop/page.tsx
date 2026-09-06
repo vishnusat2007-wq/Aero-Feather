@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ProductCard } from "@/components/store/product-card";
 import { FadeIn } from "@/components/store/fade-in";
 import { getActiveProducts } from "@/lib/data";
+import { getSignedInEmail } from "@/lib/supabase/server";
 import { cn } from "@/lib/utils";
 
 export default async function ShopPage({
@@ -10,7 +11,10 @@ export default async function ShopPage({
   searchParams: Promise<{ category?: string }>;
 }) {
   const { category } = await searchParams;
-  const products = await getActiveProducts();
+  const [products, checkoutEmail] = await Promise.all([
+    getActiveProducts(),
+    getSignedInEmail(),
+  ]);
   const filtered = category
     ? products.filter((p) => p.category === category)
     : products;
@@ -69,7 +73,7 @@ export default async function ShopPage({
         <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((product, i) => (
             <FadeIn key={product.id} delay={i * 60}>
-              <ProductCard product={product} featured />
+              <ProductCard product={product} featured checkoutEmail={checkoutEmail} />
             </FadeIn>
           ))}
         </div>

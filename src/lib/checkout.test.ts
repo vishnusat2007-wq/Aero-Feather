@@ -8,7 +8,8 @@ import {
   normalizeCheckoutEmail,
   resolveAppUrl,
 } from "./checkout.ts";
-import type { CartItem } from "./types.ts";
+import { cartItemFromProduct } from "./start-checkout.ts";
+import type { CartItem, Product } from "./types.ts";
 
 const product = {
   id: "prod_1",
@@ -96,6 +97,30 @@ describe("buildCheckoutLineItems", () => {
 
   it("rejects an empty cart", () => {
     assert.throws(() => buildCheckoutLineItems([], [product]), /Cart is empty/);
+  });
+});
+
+describe("cartItemFromProduct", () => {
+  it("maps a catalogue product onto a cart line", () => {
+    const fullProduct = {
+      ...product,
+      description: "",
+      compare_at_cents: null,
+      image_url: "/tube.png",
+      category: "shuttlecocks",
+      featured: true,
+      specs: {},
+      created_at: "",
+      updated_at: "",
+    } as Product;
+    assert.deepEqual(cartItemFromProduct(fullProduct, 3), {
+      productId: "prod_1",
+      slug: "tournament-goose",
+      name: "Tournament Goose",
+      priceCents: 2499,
+      imageUrl: "/tube.png",
+      quantity: 3,
+    });
   });
 });
 
