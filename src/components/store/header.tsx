@@ -24,7 +24,6 @@ export function StoreHeader() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [loggedIn, setLoggedIn] = useState(false);
-  const [authReady, setAuthReady] = useState(false);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24);
@@ -41,7 +40,6 @@ export function StoreHeader() {
       : Promise.resolve(null);
     resolveUser.then((user) => {
       setLoggedIn(Boolean(user));
-      setAuthReady(true);
     });
   }, []);
 
@@ -82,7 +80,7 @@ export function StoreHeader() {
           </nav>
 
           <div className="flex items-center gap-1.5 sm:gap-2">
-            <ThemeToggle className="max-sm:[&_span]:sr-only" />
+            <ThemeToggle />
 
             {loggedIn && (
               <SignOutButton className="hidden lg:inline-flex" />
@@ -96,15 +94,6 @@ export function StoreHeader() {
               <User className="h-[18px] w-[18px]" strokeWidth={1.75} />
               <span>{loggedIn ? "Account" : "Sign in"}</span>
             </Link>
-
-            {authReady && !loggedIn && (
-              <Link
-                href="/signup"
-                className="hidden text-[13px] font-medium text-af-muted transition-colors hover:text-af-cyan sm:inline"
-              >
-                Sign up
-              </Link>
-            )}
 
             <Link
               href="/cart"
@@ -184,15 +173,6 @@ export function StoreHeader() {
                 className="rounded-lg px-4 py-3 text-sm font-semibold text-af-text transition-colors hover:bg-af-surface hover:text-af-cyan"
               >
                 Sign in
-              </Link>
-            )}
-            {authReady && !loggedIn && (
-              <Link
-                href="/signup"
-                onClick={() => setMobileOpen(false)}
-                className="rounded-lg px-4 py-3 text-sm font-medium text-af-muted transition-colors hover:bg-af-surface hover:text-af-cyan"
-              >
-                Sign up
               </Link>
             )}
             {loggedIn && (
