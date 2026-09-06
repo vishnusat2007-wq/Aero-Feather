@@ -4,6 +4,7 @@ import {
   isSupabaseConfigured,
 } from "@/lib/supabase/server";
 import type { Order, OrderItem, Product, Profile } from "@/lib/types";
+import type { OrderShippingUpdate } from "@/lib/stripe-webhook";
 
 const PRODUCTS = "af_products";
 const ORDERS = "af_orders";
@@ -191,17 +192,54 @@ export async function updateOrderStatus(id: string, status: Order["status"]) {
 export async function markOrderPaidBySession(
   sessionId: string,
   paymentIntentId: string | null,
+  shipping?: OrderShippingUpdate,
 ) {
   const supabase = await createServiceClient();
+  const { data: order, error: findError } = await supabase
+    .from(ORDERS)
+    .select("id, status")
+    .eq("stripe_session_id", sessionId)
+    .maybeSingle();
+  if (findError) throw findError;
+  if (!order || order.status !== "pending") return;
+
   const { error } = await supabase
     .from(ORDERS)
     .update({
       status: "paid",
       stripe_payment_intent_id: paymentIntentId,
       updated_at: new Date().toISOString(),
+      ...(shipping ?? {}),
     })
-    .eq("stripe_session_id", sessionId);
+    .eq("id", order.id)
+    .eq("status", "pending");
   if (error) throw error;
+
+  const { data: items, error: itemsError } = await supabase
+    .from(ORDER_ITEMS)
+    .select("product_id, quantity")
+    .eq("order_id", order.id);
+  if (itemsError) throw itemsError;
+
+  for (const item of items ?? []) {
+    if (!item.product_id) continue;
+    const { data: product, error: productError } = await supabase
+      .from(PRODUCTS)
+      .select("stock")
+      .eq("id", item.product_id)
+      .maybeSingle();
+    if (productError) throw productError;
+    if (!product) continue;
+
+    const { error: stockError } = await supabase
+      .from(PRODUCTS)
+      .update({
+        stock: Math.max(0, (product.stock ?? 0) - item.quantity),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", item.product_id);
+    if (stockError) throw stockError;
+  }
 }
 
 export async function getAdminStats() {

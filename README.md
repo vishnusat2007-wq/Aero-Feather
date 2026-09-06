@@ -22,9 +22,10 @@ cp .env.example .env.local
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase publishable/anon key |
 | `SUPABASE_SERVICE_ROLE_KEY` | Server-only — checkout, webhooks, profile bootstrap |
-| `STRIPE_SECRET_KEY` | Stripe secret key |
-| `STRIPE_WEBHOOK_SECRET` | Stripe webhook signing secret |
-| `NEXT_PUBLIC_APP_URL` | e.g. `http://localhost:3000` |
+| `STRIPE_SECRET_KEY` | Stripe secret or restricted key (`rk_live_` / `sk_live_` for production) |
+| `STRIPE_WEBHOOK_SECRET` | Stripe webhook signing secret (`whsec_…`) |
+| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Publishable key (optional for hosted Checkout) |
+| `NEXT_PUBLIC_APP_URL` | Apex store URL: `https://aero-feather.vercel.app` (use `http://localhost:3000` locally) |
 | `ADMIN_EMAIL` | **Your email** — only this account gets admin access |
 
 ### 2. Supabase setup
@@ -61,9 +62,35 @@ Only the `ADMIN_EMAIL` account is promoted to admin. All other signups are custo
 | `/account` | Profile & order history |
 | `/admin` | Store management (admin role only) |
 
-## Stripe webhook
+## Stripe Checkout (live)
 
-Point Stripe to `https://your-domain.com/api/webhooks/stripe` for `checkout.session.completed`.
+Single-merchant hosted Checkout. Cart line items use `price_data` in **EUR** from Supabase product prices — Dashboard Price IDs are not required. You can create matching Stripe Products later for reporting.
+
+### Vercel environment (Production)
+
+Set these on the `aero-feather` Vercel project, then redeploy:
+
+- `STRIPE_SECRET_KEY`
+- `STRIPE_WEBHOOK_SECRET`
+- `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` (optional)
+- `NEXT_PUBLIC_APP_URL` = `https://aero-feather.vercel.app` (apex, not `www`)
+- `SUPABASE_SERVICE_ROLE_KEY` (order create / webhook writes)
+
+The checkout API returns **503** with a clear error if `STRIPE_SECRET_KEY` is missing. The app builds without Stripe keys.
+
+### Stripe Dashboard webhook
+
+1. Open the **Aero Feather** account (not another connected account).
+2. Developers → Webhooks → Add endpoint.
+3. URL (either works; same handler):
+   - `https://aero-feather.vercel.app/api/webhooks/stripe`
+   - `https://aero-feather.vercel.app/api/stripe/webhook`
+4. Events to send:
+   - `checkout.session.completed` (required)
+   - `checkout.session.async_payment_succeeded` (recommended for delayed methods)
+5. Copy the signing secret into `STRIPE_WEBHOOK_SECRET`.
+
+Do not use `www.aero-feather.vercel.app` for success/cancel URLs or the webhook endpoint.
 
 ## Manual admin promotion (optional)
 

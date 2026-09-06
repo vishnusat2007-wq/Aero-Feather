@@ -55,6 +55,25 @@ export default async function AdminOrderDetailPage({
           </div>
         </div>
 
+        {(order.shipping_line1 || order.shipping_name) && (
+          <div>
+            <h2 className="mb-2 font-semibold text-white">Shipping</h2>
+            <p className="whitespace-pre-line text-sm text-slate-300">
+              {[
+                order.shipping_name,
+                order.shipping_line1,
+                order.shipping_line2,
+                [order.shipping_city, order.shipping_county, order.shipping_postcode]
+                  .filter(Boolean)
+                  .join(", "),
+                order.shipping_country,
+              ]
+                .filter(Boolean)
+                .join("\n")}
+            </p>
+          </div>
+        )}
+
         <div>
           <h2 className="mb-3 font-semibold text-white">Items</h2>
           <ul className="space-y-2 text-sm">

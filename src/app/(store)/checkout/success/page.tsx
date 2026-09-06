@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { CheckCircle } from "lucide-react";
+import { ClearCartOnSuccess } from "@/components/store/clear-cart-on-success";
 import { Button } from "@/components/ui/button";
 
 export default function CheckoutSuccessPage() {
   return (
     <div className="mx-auto max-w-xl px-4 py-24 text-center sm:px-6">
+      <ClearCartOnSuccess />
       <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center border border-af-cyan/30 bg-af-cyan/10">
         <CheckCircle className="h-8 w-8 text-af-cyan" />
       </div>

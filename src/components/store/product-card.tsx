@@ -2,20 +2,54 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Plus } from "lucide-react";
+import { useState } from "react";
+import { Plus, Zap } from "lucide-react";
 import { LogoMark } from "@/components/store/logo";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { formatPrice } from "@/lib/format";
+import { ADDED_TO_CART_LABEL } from "@/lib/cart-copy";
 import { useCartStore } from "@/lib/cart-store";
+import { cartItemFromProduct, startStripeCheckout } from "@/lib/start-checkout";
 import type { Product } from "@/lib/types";
 
 function spec(product: Product, key: string, fallback = "—") {
   return product.specs?.[key] ?? fallback;
 }
 
-export function ProductCard({ product, featured = false }: { product: Product; featured?: boolean }) {
+export function ProductCard({
+  product,
+  featured = false,
+  checkoutEmail = "",
+}: {
+  product: Product;
+  featured?: boolean;
+  checkoutEmail?: string;
+}) {
   const addItem = useCartStore((s) => s.addItem);
+  const [email, setEmail] = useState(checkoutEmail);
+  const [askEmail, setAskEmail] = useState(false);
+  const [buying, setBuying] = useState(false);
+  const [added, setAdded] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function buyNow() {
+    setError(null);
+    const trimmed = email.trim();
+    if (!trimmed || !trimmed.includes("@")) {
+      setAskEmail(true);
+      setError("Enter your email to continue to Stripe Checkout.");
+      return;
+    }
+    setBuying(true);
+    try {
+      await startStripeCheckout([cartItemFromProduct(product)], trimmed);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Checkout failed");
+      setBuying(false);
+    }
+  }
 
   return (
     <article className="af-card-hover group flex flex-col overflow-hidden rounded-xl border border-af-cyan/10 bg-af-surface">
@@ -88,34 +122,66 @@ export function ProductCard({ product, featured = false }: { product: Product; f
           </p>
         )}
 
-        <div className="mt-5 flex items-end justify-between gap-4 border-t border-af-cyan/10 pt-5">
-          <div>
-            <p className="text-xl font-bold tracking-tight text-af-text">
-              {formatPrice(product.price_cents)}
-            </p>
-            {product.compare_at_cents && (
-              <p className="text-sm text-af-muted line-through">
-                {formatPrice(product.compare_at_cents)}
+        <div className="mt-5 space-y-3 border-t border-af-cyan/10 pt-5">
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <p className="text-xl font-bold tracking-tight text-af-text">
+                {formatPrice(product.price_cents)}
               </p>
-            )}
+              {product.compare_at_cents && (
+                <p className="text-sm text-af-muted line-through">
+                  {formatPrice(product.compare_at_cents)}
+                </p>
+              )}
+            </div>
           </div>
-          <Button
-            variant="primary"
-            size="sm"
-            disabled={product.stock === 0}
-            onClick={() =>
-              addItem({
-                productId: product.id,
-                slug: product.slug,
-                name: product.name,
-                priceCents: product.price_cents,
-                imageUrl: product.image_url,
-              })
-            }
-          >
-            <Plus className="h-4 w-4" />
-            Add to Cart
-          </Button>
+          {askEmail && (
+            <Input
+              type="email"
+              placeholder="Email for Stripe Checkout"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              disabled={buying}
+            />
+          )}
+          {error && (
+            <p className="text-xs text-red-400" role="alert">
+              {error}
+            </p>
+          )}
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Button
+              variant="primary"
+              size="sm"
+              className="flex-1"
+              disabled={product.stock === 0 || buying}
+              onClick={() => void buyNow()}
+            >
+              <Zap className="h-4 w-4" />
+              {buying ? "Opening Stripe…" : "Buy now"}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-1"
+              disabled={product.stock === 0 || buying}
+              aria-live="polite"
+              onClick={() => {
+                addItem({
+                  productId: product.id,
+                  slug: product.slug,
+                  name: product.name,
+                  priceCents: product.price_cents,
+                  imageUrl: product.image_url,
+                });
+                setAdded(true);
+                window.setTimeout(() => setAdded(false), 2000);
+              }}
+            >
+              {!added && <Plus className="h-4 w-4" />}
+              {added ? ADDED_TO_CART_LABEL : "Add to cart"}
+            </Button>
+          </div>
         </div>
       </div>
     </article>

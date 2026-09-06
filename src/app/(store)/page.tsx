@@ -16,6 +16,7 @@ import { ProductCard } from "@/components/store/product-card";
 import { Button } from "@/components/ui/button";
 import { getFeaturedProducts } from "@/lib/data";
 import { getHomepageContent } from "@/lib/site-settings";
+import { getSignedInEmail } from "@/lib/supabase/server";
 
 const trustItems = [
   { icon: Award, label: "Tournament Grade" },
@@ -25,9 +26,10 @@ const trustItems = [
 ];
 
 export default async function HomePage() {
-  const [featured, homepage] = await Promise.all([
+  const [featured, homepage, checkoutEmail] = await Promise.all([
     getFeaturedProducts(3),
     getHomepageContent(),
+    getSignedInEmail(),
   ]);
   const { performance, testimonials } = homepage;
 
@@ -80,7 +82,7 @@ export default async function HomePage() {
           <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
             {featured.map((product, i) => (
               <FadeIn key={product.id} delay={i * 80}>
-                <ProductCard product={product} featured />
+                <ProductCard product={product} featured checkoutEmail={checkoutEmail} />
               </FadeIn>
             ))}
           </div>
