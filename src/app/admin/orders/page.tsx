@@ -12,12 +12,12 @@ export default async function AdminOrdersPage() {
       <p className="text-[11px] font-semibold tracking-[0.2em] text-af-cyan uppercase">
         Finance
       </p>
-      <h1 className="mt-1 text-3xl font-bold text-white">Orders</h1>
-      <p className="mt-1 text-slate-400">{orders.length} total orders</p>
+      <h1 className="mt-1 text-3xl font-bold text-af-text">Orders</h1>
+      <p className="mt-1 text-af-muted">{orders.length} total orders</p>
 
-      <div className="mt-8 overflow-x-auto rounded-2xl border border-white/10 bg-[#0d1a34]">
+      <div className="mt-8 overflow-x-auto rounded-2xl border border-af-border bg-af-surface">
         <table className="w-full text-sm">
-          <thead className="bg-white/5 text-left text-slate-400">
+          <thead className="bg-af-bg-secondary text-left text-af-muted">
             <tr>
               <th className="px-4 py-3">Customer</th>
               <th className="px-4 py-3">Total</th>
@@ -28,9 +28,9 @@ export default async function AdminOrdersPage() {
           </thead>
           <tbody>
             {orders.map((order) => (
-              <tr key={order.id} className="border-t border-white/5">
-                <td className="px-4 py-3 text-slate-200">{order.email}</td>
-                <td className="px-4 py-3 font-medium text-white">
+              <tr key={order.id} className="border-t border-af-border">
+                <td className="px-4 py-3 text-af-text">{order.email}</td>
+                <td className="px-4 py-3 font-medium text-af-text">
                   {formatPrice(order.total_cents)}
                 </td>
                 <td className="px-4 py-3">
@@ -38,7 +38,7 @@ export default async function AdminOrdersPage() {
                     {order.status}
                   </Badge>
                 </td>
-                <td className="px-4 py-3 text-slate-500">
+                <td className="px-4 py-3 text-af-muted">
                   {formatDate(order.created_at)}
                 </td>
                 <td className="px-4 py-3">

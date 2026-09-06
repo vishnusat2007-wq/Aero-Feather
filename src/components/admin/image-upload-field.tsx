@@ -34,14 +34,14 @@ export function ImageUploadField({ name = "image", existingUrl }: Props) {
 
   return (
     <div className="space-y-3 sm:col-span-2">
-      <p className="text-sm font-medium text-slate-300">Product image</p>
+      <p className="text-sm font-medium text-af-muted">Product image</p>
       <div
         className={cn(
-          "relative flex min-h-[160px] flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-white/15 bg-[#060b18] p-4 transition hover:border-af-cyan/40",
+          "relative flex min-h-[160px] flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-af-border bg-af-bg p-4 transition hover:border-af-cyan/40",
         )}
       >
         {preview ? (
-          <div className="relative h-36 w-full max-w-xs overflow-hidden rounded-lg border border-white/10">
+          <div className="relative h-36 w-full max-w-xs overflow-hidden rounded-lg border border-af-border">
             <Image
               src={preview}
               alt="Product preview"
@@ -51,10 +51,10 @@ export function ImageUploadField({ name = "image", existingUrl }: Props) {
             />
           </div>
         ) : (
-          <div className="flex flex-col items-center gap-2 text-slate-400">
+          <div className="flex flex-col items-center gap-2 text-af-muted">
             <ImagePlus className="h-8 w-8 text-af-cyan/70" />
             <p className="text-sm">Upload a product photo</p>
-            <p className="text-xs text-slate-500">PNG, JPG or WebP · up to 5MB</p>
+            <p className="text-xs text-af-muted">PNG, JPG or WebP · up to 5MB</p>
           </div>
         )}
 
@@ -74,7 +74,7 @@ export function ImageUploadField({ name = "image", existingUrl }: Props) {
             <button
               type="button"
               onClick={clear}
-              className="inline-flex items-center gap-1 rounded-lg border border-white/10 px-3 py-2 text-xs text-slate-300 hover:bg-white/5"
+              className="inline-flex items-center gap-1 rounded-lg border border-af-border px-3 py-2 text-xs text-af-muted hover:bg-af-surface"
             >
               <X className="h-3.5 w-3.5" />
               Clear selection
@@ -82,7 +82,7 @@ export function ImageUploadField({ name = "image", existingUrl }: Props) {
           )}
         </div>
         {fileName && (
-          <p className="text-xs text-slate-500">{fileName}</p>
+          <p className="text-xs text-af-muted">{fileName}</p>
         )}
         {existingUrl && !fileName && (
           <input type="hidden" name="image_url" value={existingUrl} />

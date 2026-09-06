@@ -36,7 +36,7 @@ export function ProductForm({ product }: { product?: Product }) {
           setLoading(false);
         }
       }}
-      className="max-w-2xl space-y-6 rounded-2xl border border-white/10 bg-[#0d1a34] p-8 text-slate-200"
+      className="max-w-2xl space-y-6 rounded-2xl border border-af-border bg-af-surface p-8 text-af-text"
     >
       {product?.id && <input type="hidden" name="id" value={product.id} />}
 

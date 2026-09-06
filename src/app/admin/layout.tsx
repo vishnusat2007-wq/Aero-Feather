@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { AdminShell } from "@/components/admin/admin-shell";
+import { ThemeProvider } from "@/components/store/theme-provider";
 import { isAdmin } from "@/lib/data";
 import { getMaintenanceEnabled } from "@/lib/site-settings";
 
@@ -13,5 +14,9 @@ export default async function AdminLayout({
 
   const maintenanceEnabled = await getMaintenanceEnabled();
 
-  return <AdminShell maintenanceEnabled={maintenanceEnabled}>{children}</AdminShell>;
+  return (
+    <ThemeProvider>
+      <AdminShell maintenanceEnabled={maintenanceEnabled}>{children}</AdminShell>
+    </ThemeProvider>
+  );
 }

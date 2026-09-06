@@ -14,13 +14,13 @@ export default async function AdminDashboardPage() {
 
   return (
     <div>
-      <h1 className="text-3xl font-bold text-white">Dashboard</h1>
-      <p className="mt-1 text-slate-400">Manage your Aero Feather store</p>
+      <h1 className="text-3xl font-bold text-af-text">Dashboard</h1>
+      <p className="mt-1 text-af-muted">Manage your Aero Feather store</p>
 
       {maintenance && (
-        <div className="mt-6 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+        <div className="mt-6 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-800 dark:text-amber-200">
           Maintenance mode is <strong>ON</strong> — only admins can use the store.{" "}
-          <Link href="/admin/website#maintenance" className="underline hover:text-white">
+          <Link href="/admin/website#maintenance" className="underline hover:text-af-text">
             Manage settings
           </Link>
         </div>
@@ -38,15 +38,15 @@ export default async function AdminDashboardPage() {
         ].map(({ label, value, icon: Icon }) => (
           <div
             key={label}
-            className="rounded-2xl border border-white/10 bg-[#0d1a34] p-6 shadow-lg"
+            className="rounded-2xl border border-af-border bg-af-surface p-6 shadow-lg"
           >
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-af-cyan/15 text-af-cyan">
                 <Icon className="h-5 w-5" />
               </div>
               <div>
-                <p className="text-sm text-slate-400">{label}</p>
-                <p className="text-2xl font-bold text-white">{value}</p>
+                <p className="text-sm text-af-muted">{label}</p>
+                <p className="text-2xl font-bold text-af-text">{value}</p>
               </div>
             </div>
           </div>
@@ -72,13 +72,13 @@ export default async function AdminDashboardPage() {
       </div>
 
       <div className="mt-10">
-        <h2 className="text-xl font-bold text-white">Recent orders</h2>
+        <h2 className="text-xl font-bold text-af-text">Recent orders</h2>
         {recentOrders.length === 0 ? (
-          <p className="mt-4 text-slate-500">No orders yet.</p>
+          <p className="mt-4 text-af-muted">No orders yet.</p>
         ) : (
-          <div className="mt-4 overflow-x-auto rounded-2xl border border-white/10 bg-[#0d1a34]">
+          <div className="mt-4 overflow-x-auto rounded-2xl border border-af-border bg-af-surface">
             <table className="w-full text-sm">
-              <thead className="bg-white/5 text-left text-slate-400">
+              <thead className="bg-af-bg-secondary text-left text-af-muted">
                 <tr>
                   <th className="px-4 py-3">Email</th>
                   <th className="px-4 py-3">Total</th>
@@ -88,13 +88,13 @@ export default async function AdminDashboardPage() {
               </thead>
               <tbody>
                 {recentOrders.map((order) => (
-                  <tr key={order.id} className="border-t border-white/5">
-                    <td className="px-4 py-3 text-slate-200">{order.email}</td>
-                    <td className="px-4 py-3 font-medium text-white">
+                  <tr key={order.id} className="border-t border-af-border">
+                    <td className="px-4 py-3 text-af-text">{order.email}</td>
+                    <td className="px-4 py-3 font-medium text-af-text">
                       {formatPrice(order.total_cents)}
                     </td>
-                    <td className="px-4 py-3 capitalize text-slate-300">{order.status}</td>
-                    <td className="px-4 py-3 text-slate-500">
+                    <td className="px-4 py-3 capitalize text-af-muted">{order.status}</td>
+                    <td className="px-4 py-3 text-af-muted">
                       {new Date(order.created_at).toLocaleDateString("en-IE")}
                     </td>
                   </tr>
