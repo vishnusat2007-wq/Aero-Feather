@@ -141,7 +141,7 @@ export function AdminShell({ children, maintenanceEnabled = false }: Props) {
             <p className="text-[10px] uppercase tracking-widest text-af-cyan">Admin</p>
             <p className="truncate text-sm font-bold">{titleForPath(pathname)}</p>
           </div>
-          <ThemeToggle labeled={false} />
+          <ThemeToggle />
           <SignOutButton
             label="Logout"
             className="h-9 border-white/15 bg-white/5 px-2.5 text-slate-100 hover:border-white/30 hover:bg-white/10 hover:text-white"
