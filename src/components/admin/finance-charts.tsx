@@ -2,6 +2,7 @@
 
 import { formatPrice } from "@/lib/format";
 import type { MonthBucket, StatusBucket } from "@/lib/admin-analytics";
+import { formatOrderStatus } from "@/lib/order-status";
 
 export function RevenueBarChart({ data }: { data: MonthBucket[] }) {
   const max = Math.max(...data.map((d) => d.revenueCents), 1);
@@ -103,12 +104,12 @@ export function StatusDonutChart({ data }: { data: StatusBucket[] }) {
           <ul className="w-full space-y-2 text-sm">
             {segments.map((s) => (
               <li key={s.status} className="flex items-center justify-between gap-3">
-                <span className="flex items-center gap-2 capitalize text-af-muted">
+                <span className="flex items-center gap-2 text-af-muted">
                   <span
                     className="h-2.5 w-2.5 rounded-full"
                     style={{ background: s.color }}
                   />
-                  {s.status}
+                  {formatOrderStatus(s.status)}
                 </span>
                 <span className="tabular-nums text-af-text">
                   {s.count} · {formatPrice(s.revenueCents)}

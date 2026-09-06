@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ChangePasswordForm } from "@/components/store/change-password-form";
+import { SignOutButton } from "@/components/store/sign-out-button";
 import { updateProfileAction } from "@/lib/auth/actions";
 import { formatDate, formatPrice } from "@/lib/format";
+import { formatOrderStatus } from "@/lib/order-status";
 import { getCurrentProfile, getUserOrders } from "@/lib/data";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
@@ -40,11 +42,7 @@ export default async function AccountPage({
           <h1 className="text-3xl font-bold tracking-tight text-af-text">My account</h1>
           <p className="mt-1 text-af-muted">{user.email}</p>
         </div>
-        <form action="/auth/signout" method="post">
-          <Button variant="outline" size="sm" type="submit">
-            Sign out
-          </Button>
-        </form>
+        <SignOutButton />
       </div>
 
       {error === "admin_only" && (
@@ -101,7 +99,7 @@ export default async function AccountPage({
                 <p className="text-sm text-af-muted">{formatDate(order.created_at)}</p>
               </div>
               <Badge variant={order.status === "paid" ? "cyan" : "outline"}>
-                {order.status}
+                {formatOrderStatus(order.status)}
               </Badge>
             </div>
           ))}

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import Script from "next/script";
+import { ThemeProvider } from "@/components/store/theme-provider";
 import { getInitialThemeScript } from "@/lib/theme";
 import "./globals.css";
 
@@ -29,7 +30,9 @@ export default function RootLayout({
           {getInitialThemeScript()}
         </Script>
       </head>
-      <body className={`${jakarta.variable} antialiased`}>{children}</body>
+      <body className={`${jakarta.variable} antialiased`}>
+        <ThemeProvider>{children}</ThemeProvider>
+      </body>
     </html>
   );
 }

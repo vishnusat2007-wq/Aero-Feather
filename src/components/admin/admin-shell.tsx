@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
 import { AdminSidebar } from "@/components/admin/sidebar";
 import { LogoMark } from "@/components/store/logo";
+import { SignOutButton } from "@/components/store/sign-out-button";
 import { ThemeToggle } from "@/components/store/theme-toggle";
 import { cn } from "@/lib/utils";
 
@@ -141,6 +142,7 @@ export function AdminShell({ children, maintenanceEnabled = false }: Props) {
             <p className="truncate text-sm font-bold">{titleForPath(pathname)}</p>
           </div>
           <ThemeToggle />
+          <SignOutButton label="Logout" className="h-9 px-2.5" />
         </header>
 
         <div className="min-w-0 flex-1 overflow-auto p-4 sm:p-6 md:p-10">{children}</div>

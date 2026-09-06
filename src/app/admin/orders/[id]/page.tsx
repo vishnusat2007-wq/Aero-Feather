@@ -2,11 +2,14 @@ import { notFound } from "next/navigation";
 import { updateOrderStatusAction } from "@/app/admin/actions";
 import { formatDate, formatPrice } from "@/lib/format";
 import { getOrderById, getOrderItems } from "@/lib/data";
+import { formatOrderStatus } from "@/lib/order-status";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/input";
 
 const statuses = [
+  "incomplete",
   "pending",
+  "abandoned",
   "paid",
   "processing",
   "shipped",
@@ -51,7 +54,7 @@ export default async function AdminOrderDetailPage({
           </div>
           <div>
             <p className="text-sm text-af-muted">Status</p>
-            <p className="capitalize text-af-text">{order.status}</p>
+            <p className="text-af-text">{formatOrderStatus(order.status)}</p>
           </div>
         </div>
 
@@ -103,7 +106,7 @@ export default async function AdminOrderDetailPage({
             >
               {statuses.map((s) => (
                 <option key={s} value={s}>
-                  {s}
+                  {formatOrderStatus(s)}
                 </option>
               ))}
             </select>

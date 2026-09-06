@@ -1,14 +1,15 @@
 import Link from "next/link";
 import { Package, ShoppingBag, TrendingUp } from "lucide-react";
 import { formatPrice } from "@/lib/format";
-import { getAdminStats, getAllOrders } from "@/lib/data";
+import { getAdminStats, getConfirmedOrders } from "@/lib/data";
+import { formatOrderStatus } from "@/lib/order-status";
 import { getMaintenanceEnabled } from "@/lib/site-settings";
 import { Button } from "@/components/ui/button";
 
 export default async function AdminDashboardPage() {
   const [stats, recentOrders, maintenance] = await Promise.all([
     getAdminStats(),
-    getAllOrders().then((orders) => orders.slice(0, 5)),
+    getConfirmedOrders().then((orders) => orders.slice(0, 5)),
     getMaintenanceEnabled(),
   ]);
 
@@ -74,7 +75,13 @@ export default async function AdminDashboardPage() {
       <div className="mt-10">
         <h2 className="text-xl font-bold text-af-text">Recent orders</h2>
         {recentOrders.length === 0 ? (
-          <p className="mt-4 text-af-muted">No orders yet.</p>
+          <p className="mt-4 text-af-muted">
+            No paid orders yet. Incomplete Stripe checkouts stay out of this list —{" "}
+            <Link href="/admin/orders?view=incomplete" className="text-af-cyan hover:underline">
+              view incomplete checkouts
+            </Link>
+            .
+          </p>
         ) : (
           <div className="mt-4 overflow-x-auto rounded-2xl border border-af-border bg-af-surface">
             <table className="w-full text-sm">
@@ -93,7 +100,7 @@ export default async function AdminDashboardPage() {
                     <td className="px-4 py-3 font-medium text-af-text">
                       {formatPrice(order.total_cents)}
                     </td>
-                    <td className="px-4 py-3 capitalize text-af-muted">{order.status}</td>
+                    <td className="px-4 py-3 text-af-muted">{formatOrderStatus(order.status)}</td>
                     <td className="px-4 py-3 text-af-muted">
                       {new Date(order.created_at).toLocaleDateString("en-IE")}
                     </td>

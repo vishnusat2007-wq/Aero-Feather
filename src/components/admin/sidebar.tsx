@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { LogoMark } from "@/components/store/logo";
+import { SignOutButton } from "@/components/store/sign-out-button";
 import { ThemeToggle } from "@/components/store/theme-toggle";
 
 type NavItem = { href: string; label: string; icon: React.ComponentType<{ className?: string }> };
@@ -151,11 +152,14 @@ export function AdminSidebar({
         </Section>
       </nav>
 
-      <div className="border-t border-af-border p-3">
-        <div className="mb-1 flex items-center justify-between rounded-lg px-3 py-2">
-          <span className="text-sm font-medium text-af-muted">Theme</span>
+      <div className="space-y-2 border-t border-af-border p-3">
+        <div className="flex items-center justify-between px-1 py-1">
+          <p className="text-[10px] font-semibold tracking-[0.18em] text-af-cyan/70 uppercase">
+            Appearance
+          </p>
           <ThemeToggle />
         </div>
+        <SignOutButton className="h-10 w-full justify-center" />
         <Link
           href="/"
           onClick={onNavigate}

@@ -5,6 +5,7 @@ import { Menu, ShoppingBag, User, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { LogoMark } from "@/components/store/logo";
 import { NavLink } from "@/components/store/nav-link";
+import { SignOutButton } from "@/components/store/sign-out-button";
 import { ThemeToggle } from "@/components/store/theme-toggle";
 import { cn } from "@/lib/utils";
 import { useCartStore } from "@/lib/cart-store";
@@ -23,7 +24,6 @@ export function StoreHeader() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [loggedIn, setLoggedIn] = useState(false);
-  const [authReady, setAuthReady] = useState(false);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24);
@@ -40,7 +40,6 @@ export function StoreHeader() {
       : Promise.resolve(null);
     resolveUser.then((user) => {
       setLoggedIn(Boolean(user));
-      setAuthReady(true);
     });
   }, []);
 
@@ -83,6 +82,10 @@ export function StoreHeader() {
           <div className="flex items-center gap-1.5 sm:gap-2">
             <ThemeToggle />
 
+            {loggedIn && (
+              <SignOutButton className="hidden lg:inline-flex" />
+            )}
+
             <Link
               href={loggedIn ? "/account" : "/login"}
               aria-label={loggedIn ? "Account" : "Sign in"}
@@ -91,15 +94,6 @@ export function StoreHeader() {
               <User className="h-[18px] w-[18px]" strokeWidth={1.75} />
               <span>{loggedIn ? "Account" : "Sign in"}</span>
             </Link>
-
-            {authReady && !loggedIn && (
-              <Link
-                href="/signup"
-                className="hidden text-[13px] font-medium text-af-muted transition-colors hover:text-af-cyan sm:inline"
-              >
-                Sign up
-              </Link>
-            )}
 
             <Link
               href="/cart"
@@ -149,14 +143,17 @@ export function StoreHeader() {
         >
           <div className="flex items-center justify-between border-b border-af-cyan/10 px-5 py-4">
             <span className="text-sm font-semibold tracking-widest text-af-text">MENU</span>
-            <button
-              type="button"
-              aria-label="Close menu"
-              onClick={() => setMobileOpen(false)}
-              className="text-af-muted hover:text-af-text"
-            >
-              <X className="h-5 w-5" />
-            </button>
+            <div className="flex items-center gap-2">
+              <ThemeToggle />
+              <button
+                type="button"
+                aria-label="Close menu"
+                onClick={() => setMobileOpen(false)}
+                className="text-af-muted hover:text-af-text"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
           </div>
           <nav className="flex flex-col gap-1 p-4">
             {navLinks.map((link) => (
@@ -178,15 +175,6 @@ export function StoreHeader() {
                 Sign in
               </Link>
             )}
-            {authReady && !loggedIn && (
-              <Link
-                href="/signup"
-                onClick={() => setMobileOpen(false)}
-                className="rounded-lg px-4 py-3 text-sm font-medium text-af-muted transition-colors hover:bg-af-surface hover:text-af-cyan"
-              >
-                Sign up
-              </Link>
-            )}
             {loggedIn && (
               <Link
                 href="/account"
@@ -195,6 +183,11 @@ export function StoreHeader() {
               >
                 My account
               </Link>
+            )}
+            {loggedIn && (
+              <div className="px-4 py-2">
+                <SignOutButton className="w-full justify-center" />
+              </div>
             )}
           </nav>
         </div>
