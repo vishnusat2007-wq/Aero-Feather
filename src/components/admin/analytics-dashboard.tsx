@@ -17,15 +17,18 @@ function percent(part: number, whole: number): number {
   return Math.round((part / whole) * 100);
 }
 
-function RangeTabs({ range }: { range: AnalyticsRange }) {
+function RangeTabs({ range, preview }: { range: AnalyticsRange; preview?: boolean }) {
   return (
     <div className="flex flex-wrap gap-2" role="tablist" aria-label="Analytics range">
       {RANGES.map((item) => {
         const active = item.value === range;
+        const href = preview
+          ? `/admin/analytics?range=${item.value}&preview=1`
+          : `/admin/analytics?range=${item.value}`;
         return (
           <Link
             key={item.value}
-            href={`/admin/analytics?range=${item.value}`}
+            href={href}
             role="tab"
             aria-selected={active}
             className={cn(
@@ -213,7 +216,7 @@ export function AnalyticsDashboard({ snapshot }: { snapshot: SiteAnalyticsSnapsh
             Session-based uniques — no third-party pixels.
           </p>
         </div>
-        <RangeTabs range={snapshot.range} />
+        <RangeTabs range={snapshot.range} preview={snapshot.sample} />
       </div>
 
       {snapshot.sample && (
