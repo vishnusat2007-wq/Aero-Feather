@@ -26,9 +26,10 @@ export function applyTheme(theme: Theme) {
 
 export function persistTheme(theme: Theme) {
   localStorage.setItem(STORAGE_KEY, theme);
+  document.cookie = `${STORAGE_KEY}=${theme}; Path=/; Max-Age=31536000; SameSite=Lax`;
   applyTheme(theme);
 }
 
 export function getInitialThemeScript() {
-  return `(function(){try{var k='aero-feather-theme';var s=localStorage.getItem(k);var t=s==='light'||s==='dark'?s:'dark';var r=document.documentElement;r.classList.remove('dark','light');r.classList.add(t);r.style.colorScheme=t;}catch(e){document.documentElement.classList.add('dark');}})();`;
+  return `(function(){try{var k='aero-feather-theme';var s=localStorage.getItem(k);if(s!=='light'&&s!=='dark'){var m=document.cookie.match(/(?:^|; )aero-feather-theme=(light|dark)/);s=m?m[1]:null;}var t=s==='light'||s==='dark'?s:'dark';var r=document.documentElement;r.classList.remove('dark','light');r.classList.add(t);r.style.colorScheme=t;}catch(e){document.documentElement.classList.add('dark');}})();`;
 }

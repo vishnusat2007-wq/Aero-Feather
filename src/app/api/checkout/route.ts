@@ -7,6 +7,7 @@ import {
   normalizeCheckoutEmail,
   resolveAppUrl,
 } from "@/lib/checkout";
+import { CHECKOUT_DRAFT_STATUS } from "@/lib/order-status";
 import type { CartItem } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -84,7 +85,7 @@ export async function POST(request: Request) {
       .insert({
         user_id: user?.id ?? null,
         email,
-        status: "pending",
+        status: CHECKOUT_DRAFT_STATUS,
         total_cents: totalCents,
       })
       .select()

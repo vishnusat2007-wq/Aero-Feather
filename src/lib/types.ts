@@ -28,7 +28,9 @@ export type Profile = {
 };
 
 export type OrderStatus =
+  | "incomplete"
   | "pending"
+  | "abandoned"
   | "paid"
   | "processing"
   | "shipped"

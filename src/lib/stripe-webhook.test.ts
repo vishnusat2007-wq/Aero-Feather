@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import type Stripe from "stripe";
 import {
+  expiredCheckoutSessionFromEvent,
   paidCheckoutSessionFromEvent,
   paymentIntentIdFromSession,
   shippingFromSession,
@@ -84,6 +85,26 @@ describe("shippingFromSession", () => {
       shipping_postcode: "W91 ABC1",
       shipping_country: "IE",
     });
+  });
+});
+
+describe("expiredCheckoutSessionFromEvent", () => {
+  it("returns the session when Checkout expires unpaid", () => {
+    const result = expiredCheckoutSessionFromEvent({
+      type: "checkout.session.expired",
+      data: { object: session({ payment_status: "unpaid" }) },
+    });
+    assert.equal(result?.id, "cs_test_123");
+  });
+
+  it("ignores paid completion events", () => {
+    assert.equal(
+      expiredCheckoutSessionFromEvent({
+        type: "checkout.session.completed",
+        data: { object: session({}) },
+      }),
+      null,
+    );
   });
 });
 

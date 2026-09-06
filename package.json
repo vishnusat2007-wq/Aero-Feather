@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --experimental-strip-types --test src/components/store/shuttlecock-scroll-story.test.ts src/lib/checkout.test.ts src/lib/stripe-webhook.test.ts"
+    "test": "node --experimental-strip-types --test src/components/store/shuttlecock-scroll-story.test.ts src/lib/checkout.test.ts src/lib/stripe-webhook.test.ts src/lib/order-status.test.ts"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.23",

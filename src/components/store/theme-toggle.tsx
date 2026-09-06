@@ -3,41 +3,85 @@
 import { Moon, Sun } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/components/store/theme-provider";
+import type { Theme } from "@/lib/theme";
 
-export function ThemeToggle() {
-  const { theme, toggleTheme } = useTheme();
-  const isDark = theme === "dark";
+type Props = {
+  className?: string;
+  /** Wider Dark/Light segmented control for headers and admin chrome. */
+  labeled?: boolean;
+};
+
+export function ThemeToggle({ className, labeled = true }: Props) {
+  const { theme, setTheme } = useTheme();
+
+  return (
+    <div
+      role="group"
+      aria-label="Colour theme"
+      className={cn(
+        "inline-flex h-9 items-center overflow-hidden rounded-lg border border-af-cyan/15 bg-af-surface/50 p-0.5",
+        className,
+      )}
+    >
+      <ThemeOption
+        value="light"
+        current={theme}
+        onSelect={setTheme}
+        labeled={labeled}
+        label="Light"
+        icon={Sun}
+        iconClass="text-amber-500"
+      />
+      <ThemeOption
+        value="dark"
+        current={theme}
+        onSelect={setTheme}
+        labeled={labeled}
+        label="Dark"
+        icon={Moon}
+        iconClass="text-af-cyan"
+      />
+    </div>
+  );
+}
+
+function ThemeOption({
+  value,
+  current,
+  onSelect,
+  labeled,
+  label,
+  icon: Icon,
+  iconClass,
+}: {
+  value: Theme;
+  current: Theme;
+  onSelect: (theme: Theme) => void;
+  labeled: boolean;
+  label: string;
+  icon: typeof Sun;
+  iconClass: string;
+}) {
+  const selected = current === value;
 
   return (
     <button
       type="button"
-      aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
-      onClick={toggleTheme}
+      aria-label={`Switch to ${label.toLowerCase()} mode`}
+      aria-pressed={selected}
+      onClick={() => onSelect(value)}
       className={cn(
-        "relative flex h-9 w-9 items-center justify-center overflow-hidden rounded-lg",
-        "border border-af-cyan/15 bg-af-surface/50 text-af-muted",
-        "transition-all duration-300 hover:border-af-cyan/35 hover:text-af-cyan",
-        "hover:shadow-[0_0_16px_rgba(32,182,232,0.12)]",
+        "inline-flex h-8 items-center justify-center gap-1.5 rounded-md px-2 text-[12px] font-semibold transition-all",
+        selected
+          ? "bg-af-surface-elevated text-af-text shadow-sm"
+          : "text-af-muted hover:text-af-text",
       )}
     >
-      <Sun
-        className={cn(
-          "absolute h-[17px] w-[17px] transition-all duration-500",
-          isDark
-            ? "rotate-90 scale-0 opacity-0"
-            : "rotate-0 scale-100 opacity-100 text-amber-500",
-        )}
+      <Icon
+        className={cn("h-3.5 w-3.5", selected && iconClass)}
         strokeWidth={1.75}
       />
-      <Moon
-        className={cn(
-          "absolute h-[17px] w-[17px] transition-all duration-500",
-          isDark
-            ? "rotate-0 scale-100 opacity-100 text-af-cyan"
-            : "-rotate-90 scale-0 opacity-0",
-        )}
-        strokeWidth={1.75}
-      />
+      {labeled && <span>{label}</span>}
     </button>
   );
 }

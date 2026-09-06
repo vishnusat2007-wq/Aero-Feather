@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import type { Order, Product } from "@/lib/types";
 import { getAllOrders, getAllProducts } from "@/lib/data";
+import { isConfirmedOrderStatus, isIncompleteCheckoutStatus } from "@/lib/order-status";
 
 export type MonthBucket = {
   key: string;
@@ -25,7 +26,6 @@ export type FinanceSnapshot = {
   recentPaid: Order[];
 };
 
-const PAID_STATUSES = new Set(["paid", "processing", "shipped", "delivered"]);
 
 function monthKey(d: Date) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
@@ -68,9 +68,9 @@ export async function getFinanceSnapshot(): Promise<FinanceSnapshot> {
     bucket.revenueCents += order.total_cents;
     statusMap.set(status, bucket);
 
-    if (status === "pending") pendingCount += 1;
+    if (isIncompleteCheckoutStatus(status)) pendingCount += 1;
 
-    if (PAID_STATUSES.has(status)) {
+    if (isConfirmedOrderStatus(status)) {
       totalRevenueCents += order.total_cents;
       paidOrderCount += 1;
       const key = monthKey(new Date(order.created_at));
@@ -83,7 +83,7 @@ export async function getFinanceSnapshot(): Promise<FinanceSnapshot> {
   }
 
   const recentPaid = orders
-    .filter((o) => PAID_STATUSES.has(o.status))
+    .filter((o) => isConfirmedOrderStatus(o.status))
     .slice(0, 8);
 
   return {
