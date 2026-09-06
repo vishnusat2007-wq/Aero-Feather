@@ -1,20 +1,46 @@
 import { NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
-import { getStripe, isStripeConfigured } from "@/lib/stripe";
+import { getStripeClient, isStripeConfigured } from "@/lib/stripe";
+import {
+  buildCheckoutLineItems,
+  buildCheckoutSessionParams,
+  normalizeCheckoutEmail,
+  resolveAppUrl,
+} from "@/lib/checkout";
 import type { CartItem } from "@/lib/types";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
   try {
     if (!isStripeConfigured()) {
       return NextResponse.json(
-        { error: "Stripe is not configured. Add STRIPE_SECRET_KEY to your environment." },
+        {
+          error:
+            "Stripe is not configured. Add STRIPE_SECRET_KEY to the Vercel environment.",
+        },
+        { status: 503 },
+      );
+    }
+
+    if (
+      !process.env.NEXT_PUBLIC_SUPABASE_URL ||
+      !process.env.SUPABASE_SERVICE_ROLE_KEY
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "Supabase service role is not configured. Add SUPABASE_SERVICE_ROLE_KEY.",
+        },
         { status: 503 },
       );
     }
 
     const body = await request.json();
     const items = body.items as CartItem[];
-    const email = body.email as string | undefined;
+    const requestedEmail =
+      typeof body.email === "string" ? body.email : undefined;
 
     if (!items?.length) {
       return NextResponse.json({ error: "Cart is empty" }, { status: 400 });
@@ -25,8 +51,16 @@ export async function POST(request: Request) {
       data: { user },
     } = await supabase.auth.getUser();
 
+    const email = normalizeCheckoutEmail(requestedEmail, user?.email);
+    if (!email) {
+      return NextResponse.json(
+        { error: "A valid email is required for Stripe Checkout." },
+        { status: 400 },
+      );
+    }
+
     const service = await createServiceClient();
-    const productIds = items.map((i) => i.productId);
+    const productIds = [...new Set(items.map((item) => item.productId))];
     const { data: products, error: productsError } = await service
       .from("af_products")
       .select("id, name, slug, price_cents, stock, active")
@@ -36,31 +70,20 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Products not found" }, { status: 400 });
     }
 
-    let totalCents = 0;
-    const lineItems = items.map((item) => {
-      const product = products.find((p) => p.id === item.productId);
-      if (!product || !product.active || product.stock < item.quantity) {
-        throw new Error(`Product unavailable: ${item.name}`);
-      }
-      totalCents += product.price_cents * item.quantity;
-      return {
-        price_data: {
-          currency: "eur",
-          product_data: {
-            name: product.name,
-            metadata: { slug: product.slug, product_id: product.id },
-          },
-          unit_amount: product.price_cents,
-        },
-        quantity: item.quantity,
-      };
-    });
+    let lineItems;
+    let totalCents;
+    try {
+      ({ lineItems, totalCents } = buildCheckoutLineItems(items, products));
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Cart is invalid";
+      return NextResponse.json({ error: message }, { status: 400 });
+    }
 
     const { data: order, error: orderError } = await service
       .from("af_orders")
       .insert({
         user_id: user?.id ?? null,
-        email: email ?? user?.email ?? "",
+        email,
         status: "pending",
         total_cents: totalCents,
       })
@@ -71,7 +94,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Could not create order" }, { status: 500 });
     }
 
-    await service.from("af_order_items").insert(
+    const { error: itemsError } = await service.from("af_order_items").insert(
       items.map((item) => {
         const product = products.find((p) => p.id === item.productId)!;
         return {
@@ -85,25 +108,31 @@ export async function POST(request: Request) {
       }),
     );
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
-    const stripe = getStripe();
-    const suffix = Math.random().toString(36).slice(2, 10);
+    if (itemsError) {
+      return NextResponse.json({ error: "Could not create order items" }, { status: 500 });
+    }
 
-    const session = await stripe.checkout.sessions.create({
-      mode: "payment",
-      customer_email: email ?? user?.email ?? undefined,
-      line_items: lineItems,
-      success_url: `${appUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${appUrl}/cart`,
-      metadata: { order_id: order.id },
-      integration_identifier: `aero-feather-${suffix}`,
-      shipping_address_collection: { allowed_countries: ["IE", "GB", "FR", "DE", "NL", "BE"] },
-    });
+    const stripe = getStripeClient();
+    const session = await stripe.checkout.sessions.create(
+      buildCheckoutSessionParams({
+        lineItems,
+        email,
+        orderId: order.id,
+        appUrl: resolveAppUrl(),
+      }),
+    );
 
-    await service
+    const { error: attachError } = await service
       .from("af_orders")
       .update({ stripe_session_id: session.id })
       .eq("id", order.id);
+
+    if (attachError || !session.url) {
+      return NextResponse.json(
+        { error: "Could not start Stripe Checkout" },
+        { status: 500 },
+      );
+    }
 
     return NextResponse.json({ url: session.url });
   } catch (err) {

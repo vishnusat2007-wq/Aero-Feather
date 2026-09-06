@@ -1,38 +1,58 @@
 import { NextResponse } from "next/server";
-import Stripe from "stripe";
+import type Stripe from "stripe";
 import { markOrderPaidBySession } from "@/lib/data";
-import { getStripe } from "@/lib/stripe";
+import { getStripeClient, isStripeWebhookConfigured } from "@/lib/stripe";
+import {
+  paidCheckoutSessionFromEvent,
+  paymentIntentIdFromSession,
+  shippingFromSession,
+} from "@/lib/stripe-webhook";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
+  if (!isStripeWebhookConfigured()) {
+    return NextResponse.json(
+      {
+        error:
+          "Stripe webhook is not configured. Add STRIPE_SECRET_KEY and STRIPE_WEBHOOK_SECRET.",
+      },
+      { status: 503 },
+    );
+  }
+
   const body = await request.text();
   const signature = request.headers.get("stripe-signature");
-
-  if (!signature || !process.env.STRIPE_WEBHOOK_SECRET) {
-    return NextResponse.json({ error: "Missing webhook config" }, { status: 400 });
+  if (!signature) {
+    return NextResponse.json({ error: "Missing stripe-signature header" }, { status: 400 });
   }
 
   let event: Stripe.Event;
   try {
-    const stripe = getStripe();
+    const stripe = getStripeClient();
     event = stripe.webhooks.constructEvent(
       body,
       signature,
-      process.env.STRIPE_WEBHOOK_SECRET,
+      process.env.STRIPE_WEBHOOK_SECRET!,
     );
   } catch {
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
   }
 
-  if (event.type === "checkout.session.completed") {
-    const session = event.data.object as Stripe.Checkout.Session;
-    if (session.payment_status === "paid" && session.id) {
-      await markOrderPaidBySession(
-        session.id,
-        typeof session.payment_intent === "string"
-          ? session.payment_intent
-          : session.payment_intent?.id ?? null,
-      );
-    }
+  const session = paidCheckoutSessionFromEvent(
+    event as {
+      type: string;
+      data: { object: Stripe.Checkout.Session };
+    },
+  );
+
+  if (session) {
+    await markOrderPaidBySession(
+      session.id,
+      paymentIntentIdFromSession(session),
+      shippingFromSession(session),
+    );
   }
 
   return NextResponse.json({ received: true });
