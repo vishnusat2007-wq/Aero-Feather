@@ -10,6 +10,7 @@ const MAINTENANCE_ALLOW = [
   "/auth",
   "/api/auth",
   "/api/webhooks",
+  "/api/analytics",
 ];
 
 export async function updateSession(request: NextRequest) {

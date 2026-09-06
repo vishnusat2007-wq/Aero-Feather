@@ -1,4 +1,6 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
+import { PageViewTracker } from "@/components/store/page-view-tracker";
 import { StoreFooter } from "@/components/store/footer";
 import { StoreHeader } from "@/components/store/header";
 
@@ -15,6 +17,9 @@ export default function StoreLayout({
 }) {
   return (
     <div className="flex min-h-screen flex-col bg-af-bg text-af-text">
+      <Suspense fallback={null}>
+        <PageViewTracker />
+      </Suspense>
       <StoreHeader />
       <main className="flex-1 pt-16 lg:pt-[4.5rem]">{children}</main>
       <StoreFooter />

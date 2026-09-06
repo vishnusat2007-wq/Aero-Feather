@@ -9,6 +9,7 @@ import {
   Store,
   Globe,
   ChartColumn,
+  Activity,
   Boxes,
   Wrench,
   UserRound,
@@ -22,6 +23,7 @@ type NavItem = { href: string; label: string; icon: React.ComponentType<{ classN
 
 const overview: NavItem[] = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/admin/analytics", label: "Analytics", icon: Activity },
 ];
 
 const finance: NavItem[] = [

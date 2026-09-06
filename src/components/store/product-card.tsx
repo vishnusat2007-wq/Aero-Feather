@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { formatPrice } from "@/lib/format";
 import { ADDED_TO_CART_LABEL } from "@/lib/cart-copy";
 import { useCartStore } from "@/lib/cart-store";
+import { trackCheckoutStart } from "@/lib/analytics-client";
 import { cartItemFromProduct, startStripeCheckout } from "@/lib/start-checkout";
 import type { Product } from "@/lib/types";
 
@@ -44,6 +45,7 @@ export function ProductCard({
     }
     setBuying(true);
     try {
+      trackCheckoutStart();
       await startStripeCheckout([cartItemFromProduct(product)], trimmed);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Checkout failed");

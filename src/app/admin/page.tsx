@@ -65,6 +65,9 @@ export default async function AdminDashboardPage() {
           <Link href="/admin/website">Website Manager</Link>
         </Button>
         <Button variant="ghost" asChild>
+          <Link href="/admin/analytics">Analytics</Link>
+        </Button>
+        <Button variant="ghost" asChild>
           <Link href="/admin/finance">Finance</Link>
         </Button>
         <Button variant="ghost" asChild>

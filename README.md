@@ -6,7 +6,7 @@ Premium shuttlecock e-commerce store for Ireland — built with Next.js, Supabas
 
 - **Public storefront** — branded shop, product pages, cart
 - **Customer accounts** — sign up at `/signup`, sign in at `/login`, order history at `/account`
-- **Admin dashboard** — manage products & orders at `/admin` (owner only)
+- **Admin dashboard** — manage products, orders, and analytics at `/admin` (owner only)
 - **Stripe Checkout** — secure payments with shipping address collection
 
 ## Getting started
@@ -31,7 +31,10 @@ cp .env.example .env.local
 ### 2. Supabase setup
 
 1. Create a project at [supabase.com](https://supabase.com)
-2. Run both migrations in `supabase/migrations/` via the SQL editor (in order)
+2. Run the SQL files in `supabase/migrations/` via the SQL editor (in order). The
+   `*_page_views_analytics.sql` migration adds first-party `af_page_views` (RLS:
+   anon/authenticated INSERT, admin SELECT). Apply it before expecting the admin
+   Analytics page to show live visitor data.
 3. In **Authentication → URL configuration**, add:
    - Site URL: `http://localhost:3000` (or your Vercel URL)
    - Redirect URLs: `http://localhost:3000/auth/callback`
