@@ -114,7 +114,9 @@ export async function updateOrderStatusAction(formData: FormData) {
   await requireAdmin();
   const id = formData.get("id")?.toString();
   const status = formData.get("status")?.toString() as
+    | "incomplete"
     | "pending"
+    | "abandoned"
     | "paid"
     | "processing"
     | "shipped"

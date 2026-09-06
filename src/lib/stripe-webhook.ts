@@ -5,6 +5,8 @@ export const STRIPE_ORDER_EVENTS = [
   "checkout.session.async_payment_succeeded",
 ] as const;
 
+export const STRIPE_ABANDONED_EVENTS = ["checkout.session.expired"] as const;
+
 export type OrderShippingUpdate = {
   shipping_name: string | null;
   shipping_line1: string | null;
@@ -17,6 +19,10 @@ export type OrderShippingUpdate = {
 
 export function isPaidCheckoutEvent(type: string) {
   return (STRIPE_ORDER_EVENTS as readonly string[]).includes(type);
+}
+
+export function isExpiredCheckoutEvent(type: string) {
+  return (STRIPE_ABANDONED_EVENTS as readonly string[]).includes(type);
 }
 
 export function paidCheckoutSessionFromEvent(event: {
@@ -38,6 +44,18 @@ export function paidCheckoutSessionFromEvent(event: {
     return null;
   }
   return session;
+}
+
+export function expiredCheckoutSessionFromEvent(event: {
+  type: string;
+  data: { object: Stripe.Checkout.Session };
+}): Stripe.Checkout.Session | null {
+  if (!isExpiredCheckoutEvent(event.type)) {
+    return null;
+  }
+
+  const session = event.data.object;
+  return session.id ? session : null;
 }
 
 export function paymentIntentIdFromSession(session: Stripe.Checkout.Session) {

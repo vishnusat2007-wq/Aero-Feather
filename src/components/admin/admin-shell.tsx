@@ -5,6 +5,8 @@ import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
 import { AdminSidebar } from "@/components/admin/sidebar";
 import { LogoMark } from "@/components/store/logo";
+import { SignOutButton } from "@/components/store/sign-out-button";
+import { ThemeToggle } from "@/components/store/theme-toggle";
 import { cn } from "@/lib/utils";
 
 const MD_BREAKPOINT = 768;
@@ -135,10 +137,15 @@ export function AdminShell({ children, maintenanceEnabled = false }: Props) {
             <Menu className="h-5 w-5" />
           </button>
           <LogoMark size={32} />
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <p className="text-[10px] uppercase tracking-widest text-af-cyan">Admin</p>
             <p className="truncate text-sm font-bold">{titleForPath(pathname)}</p>
           </div>
+          <ThemeToggle labeled={false} />
+          <SignOutButton
+            label="Logout"
+            className="h-9 border-white/15 bg-white/5 px-2.5 text-slate-100 hover:border-white/30 hover:bg-white/10 hover:text-white"
+          />
         </header>
 
         <div className="min-w-0 flex-1 overflow-auto p-4 sm:p-6 md:p-10">{children}</div>

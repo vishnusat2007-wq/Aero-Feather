@@ -3,8 +3,13 @@ import {
   createServiceClient,
   isSupabaseConfigured,
 } from "@/lib/supabase/server";
-import type { Order, OrderItem, Product, Profile } from "@/lib/types";
+import type { Order, OrderItem, OrderStatus, Product, Profile } from "@/lib/types";
 import type { OrderShippingUpdate } from "@/lib/stripe-webhook";
+import {
+  CONFIRMED_ORDER_STATUSES,
+  STORE_ORDER_STATUSES,
+  isPayableCheckoutStatus,
+} from "@/lib/order-status";
 
 const PRODUCTS = "af_products";
 const ORDERS = "af_orders";
@@ -105,6 +110,7 @@ export async function getUserOrders(userId: string): Promise<Order[]> {
     .from(ORDERS)
     .select("*")
     .eq("user_id", userId)
+    .in("status", STORE_ORDER_STATUSES)
     .order("created_at", { ascending: false });
 
   if (error) throw error;
@@ -120,6 +126,24 @@ export async function getAllOrders(): Promise<Order[]> {
 
   if (error) throw error;
   return (data ?? []) as Order[];
+}
+
+export async function getOrdersByStatuses(
+  statuses: readonly OrderStatus[],
+): Promise<Order[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from(ORDERS)
+    .select("*")
+    .in("status", statuses)
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+  return (data ?? []) as Order[];
+}
+
+export async function getConfirmedOrders(): Promise<Order[]> {
+  return getOrdersByStatuses(CONFIRMED_ORDER_STATUSES);
 }
 
 export async function getOrderById(id: string): Promise<Order | null> {
@@ -201,7 +225,7 @@ export async function markOrderPaidBySession(
     .eq("stripe_session_id", sessionId)
     .maybeSingle();
   if (findError) throw findError;
-  if (!order || order.status !== "pending") return;
+  if (!order || !isPayableCheckoutStatus(order.status)) return;
 
   const { error } = await supabase
     .from(ORDERS)
@@ -212,7 +236,7 @@ export async function markOrderPaidBySession(
       ...(shipping ?? {}),
     })
     .eq("id", order.id)
-    .eq("status", "pending");
+    .in("status", ["incomplete", "pending", "abandoned"]);
   if (error) throw error;
 
   const { data: items, error: itemsError } = await supabase
@@ -242,15 +266,39 @@ export async function markOrderPaidBySession(
   }
 }
 
+export async function markOrderAbandonedBySession(sessionId: string) {
+  const supabase = await createServiceClient();
+  const { data: order, error: findError } = await supabase
+    .from(ORDERS)
+    .select("id, status")
+    .eq("stripe_session_id", sessionId)
+    .maybeSingle();
+  if (findError) throw findError;
+  if (!order || !isPayableCheckoutStatus(order.status)) return;
+
+  const { error } = await supabase
+    .from(ORDERS)
+    .update({
+      status: "abandoned",
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", order.id)
+    .in("status", ["incomplete", "pending"]);
+  if (error) throw error;
+}
+
 export async function getAdminStats() {
   const supabase = await createClient();
   const [products, orders, paidOrders] = await Promise.all([
     supabase.from(PRODUCTS).select("id", { count: "exact", head: true }),
-    supabase.from(ORDERS).select("id", { count: "exact", head: true }),
+    supabase
+      .from(ORDERS)
+      .select("id", { count: "exact", head: true })
+      .in("status", CONFIRMED_ORDER_STATUSES),
     supabase
       .from(ORDERS)
       .select("total_cents")
-      .in("status", ["paid", "processing", "shipped", "delivered"]),
+      .in("status", CONFIRMED_ORDER_STATUSES),
   ]);
 
   const revenue =

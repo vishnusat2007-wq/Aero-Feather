@@ -5,6 +5,7 @@ import { Menu, ShoppingBag, User, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { LogoMark } from "@/components/store/logo";
 import { NavLink } from "@/components/store/nav-link";
+import { SignOutButton } from "@/components/store/sign-out-button";
 import { ThemeToggle } from "@/components/store/theme-toggle";
 import { cn } from "@/lib/utils";
 import { useCartStore } from "@/lib/cart-store";
@@ -81,7 +82,11 @@ export function StoreHeader() {
           </nav>
 
           <div className="flex items-center gap-1.5 sm:gap-2">
-            <ThemeToggle />
+            <ThemeToggle className="max-sm:[&_span]:sr-only" />
+
+            {loggedIn && (
+              <SignOutButton className="hidden lg:inline-flex" />
+            )}
 
             <Link
               href={loggedIn ? "/account" : "/login"}
@@ -149,14 +154,17 @@ export function StoreHeader() {
         >
           <div className="flex items-center justify-between border-b border-af-cyan/10 px-5 py-4">
             <span className="text-sm font-semibold tracking-widest text-af-text">MENU</span>
-            <button
-              type="button"
-              aria-label="Close menu"
-              onClick={() => setMobileOpen(false)}
-              className="text-af-muted hover:text-af-text"
-            >
-              <X className="h-5 w-5" />
-            </button>
+            <div className="flex items-center gap-2">
+              <ThemeToggle />
+              <button
+                type="button"
+                aria-label="Close menu"
+                onClick={() => setMobileOpen(false)}
+                className="text-af-muted hover:text-af-text"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
           </div>
           <nav className="flex flex-col gap-1 p-4">
             {navLinks.map((link) => (
@@ -195,6 +203,11 @@ export function StoreHeader() {
               >
                 My account
               </Link>
+            )}
+            {loggedIn && (
+              <div className="px-4 py-2">
+                <SignOutButton className="w-full justify-center" />
+              </div>
             )}
           </nav>
         </div>

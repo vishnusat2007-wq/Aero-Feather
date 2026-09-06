@@ -1,4 +1,5 @@
 import { ChangePasswordForm } from "@/components/store/change-password-form";
+import { SignOutButton } from "@/components/store/sign-out-button";
 import { updateProfileAction } from "@/lib/auth/actions";
 import { getCurrentProfile } from "@/lib/data";
 import { createClient } from "@/lib/supabase/server";
@@ -23,6 +24,9 @@ export default async function AdminProfilePage() {
         </p>
         <h1 className="mt-1 text-3xl font-bold text-white">Profile</h1>
         <p className="mt-1 text-slate-400">{user.email}</p>
+        <div className="mt-4">
+          <SignOutButton className="border-white/15 bg-white/5 text-slate-100 hover:border-white/30 hover:bg-white/10 hover:text-white" />
+        </div>
       </div>
 
       <section className="rounded-2xl border border-white/10 bg-[#0d1a34] p-6">

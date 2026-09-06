@@ -28,10 +28,10 @@ export default async function FinancePage() {
       hint: "Per paid order",
     },
     {
-      label: "Pending",
+      label: "Incomplete checkouts",
       value: finance.pendingCount,
       icon: Clock,
-      hint: "Awaiting payment",
+      hint: "Abandoned or unpaid sessions",
     },
   ];
 

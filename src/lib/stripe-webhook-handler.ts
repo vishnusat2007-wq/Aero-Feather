@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import type Stripe from "stripe";
-import { markOrderPaidBySession } from "@/lib/data";
+import { markOrderAbandonedBySession, markOrderPaidBySession } from "@/lib/data";
 import { getStripeClient, isStripeWebhookConfigured } from "@/lib/stripe";
 import {
+  expiredCheckoutSessionFromEvent,
   paidCheckoutSessionFromEvent,
   paymentIntentIdFromSession,
   shippingFromSession,
@@ -50,6 +51,17 @@ export async function handleStripeWebhookRequest(request: Request) {
       paymentIntentIdFromSession(session),
       shippingFromSession(session),
     );
+    return NextResponse.json({ received: true });
+  }
+
+  const expired = expiredCheckoutSessionFromEvent(
+    event as {
+      type: string;
+      data: { object: Stripe.Checkout.Session };
+    },
+  );
+  if (expired) {
+    await markOrderAbandonedBySession(expired.id);
   }
 
   return NextResponse.json({ received: true });
