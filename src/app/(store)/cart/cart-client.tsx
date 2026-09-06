@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/input";
 import { formatPrice } from "@/lib/format";
 import { useCartStore } from "@/lib/cart-store";
+import { trackCheckoutStart } from "@/lib/analytics-client";
 import { startStripeCheckout } from "@/lib/start-checkout";
 
 export function CartClient({ initialEmail = "" }: { initialEmail?: string }) {
@@ -26,6 +27,7 @@ export function CartClient({ initialEmail = "" }: { initialEmail?: string }) {
         throw new Error("Enter a valid email for your order confirmation.");
       }
 
+      trackCheckoutStart();
       await startStripeCheckout(items, trimmed);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Checkout failed");

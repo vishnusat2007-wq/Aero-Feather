@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/input";
 import { ADDED_TO_CART_LABEL } from "@/lib/cart-copy";
 import { useCartStore } from "@/lib/cart-store";
+import { trackCheckoutStart } from "@/lib/analytics-client";
 import { cartItemFromProduct, startStripeCheckout } from "@/lib/start-checkout";
 import type { Product } from "@/lib/types";
 
@@ -46,6 +47,7 @@ export function PurchaseButtons({
 
     setBuying(true);
     try {
+      trackCheckoutStart();
       await startStripeCheckout([cartItemFromProduct(product, quantity)], trimmed);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Checkout failed");

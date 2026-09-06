@@ -13,6 +13,7 @@ const MD_BREAKPOINT = 768;
 
 function titleForPath(pathname: string): string {
   if (pathname === "/admin") return "Dashboard";
+  if (pathname.startsWith("/admin/analytics")) return "Analytics";
   if (pathname.startsWith("/admin/finance")) return "Revenue";
   if (pathname.startsWith("/admin/orders")) return "Orders";
   if (pathname.startsWith("/admin/website")) return "Site content";
