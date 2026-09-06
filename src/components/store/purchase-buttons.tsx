@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Minus, Plus, ShoppingBag, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/input";
+import { ADDED_TO_CART_LABEL } from "@/lib/cart-copy";
 import { useCartStore } from "@/lib/cart-store";
 import { cartItemFromProduct, startStripeCheckout } from "@/lib/start-checkout";
 import type { Product } from "@/lib/types";
@@ -124,10 +125,11 @@ export function PurchaseButtons({
           size="lg"
           className="flex-1"
           disabled={busy}
+          aria-live="polite"
           onClick={onAddToCart}
         >
           <ShoppingBag className="h-5 w-5" />
-          {added ? "Added to cart" : "Add to cart"}
+          {added ? ADDED_TO_CART_LABEL : "Add to cart"}
         </Button>
       </div>
 

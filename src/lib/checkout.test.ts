@@ -8,6 +8,7 @@ import {
   normalizeCheckoutEmail,
   resolveAppUrl,
 } from "./checkout.ts";
+import { ADDED_TO_CART_LABEL } from "./cart-copy.ts";
 import { cartItemFromProduct } from "./start-checkout.ts";
 import type { CartItem, Product } from "./types.ts";
 
@@ -97,6 +98,12 @@ describe("buildCheckoutLineItems", () => {
 
   it("rejects an empty cart", () => {
     assert.throws(() => buildCheckoutLineItems([], [product]), /Cart is empty/);
+  });
+});
+
+describe("add-to-cart confirmation", () => {
+  it("uses the exact storefront confirmation copy", () => {
+    assert.equal(ADDED_TO_CART_LABEL, "Added to the cart");
   });
 });
 

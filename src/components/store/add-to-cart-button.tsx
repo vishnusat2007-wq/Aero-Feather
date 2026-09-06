@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ShoppingBag } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ADDED_TO_CART_LABEL } from "@/lib/cart-copy";
 import { useCartStore } from "@/lib/cart-store";
 import type { Product } from "@/lib/types";
 
@@ -14,6 +15,7 @@ export function AddToCartButton({ product }: { product: Product }) {
     <Button
       variant="primary"
       size="lg"
+      aria-live="polite"
       onClick={() => {
         addItem({
           productId: product.id,
@@ -27,7 +29,7 @@ export function AddToCartButton({ product }: { product: Product }) {
       }}
     >
       <ShoppingBag className="h-5 w-5" />
-      {added ? "Added to cart" : "Add to Cart"}
+      {added ? ADDED_TO_CART_LABEL : "Add to cart"}
     </Button>
   );
 }

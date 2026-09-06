@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatPrice } from "@/lib/format";
+import { ADDED_TO_CART_LABEL } from "@/lib/cart-copy";
 import { useCartStore } from "@/lib/cart-store";
 import { cartItemFromProduct, startStripeCheckout } from "@/lib/start-checkout";
 import type { Product } from "@/lib/types";
@@ -30,6 +31,7 @@ export function ProductCard({
   const [email, setEmail] = useState(checkoutEmail);
   const [askEmail, setAskEmail] = useState(false);
   const [buying, setBuying] = useState(false);
+  const [added, setAdded] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function buyNow() {
@@ -163,18 +165,21 @@ export function ProductCard({
               size="sm"
               className="flex-1"
               disabled={product.stock === 0 || buying}
-              onClick={() =>
+              aria-live="polite"
+              onClick={() => {
                 addItem({
                   productId: product.id,
                   slug: product.slug,
                   name: product.name,
                   priceCents: product.price_cents,
                   imageUrl: product.image_url,
-                })
-              }
+                });
+                setAdded(true);
+                window.setTimeout(() => setAdded(false), 2000);
+              }}
             >
-              <Plus className="h-4 w-4" />
-              Add to cart
+              {!added && <Plus className="h-4 w-4" />}
+              {added ? ADDED_TO_CART_LABEL : "Add to cart"}
             </Button>
           </div>
         </div>
