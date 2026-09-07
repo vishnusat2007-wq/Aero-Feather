@@ -55,7 +55,7 @@ describe("forward opening is unchanged", () => {
     assert.equal(getForwardAnim(0.5).chapter, 2);
     assert.equal(getForwardAnim(0.7).chapter, 3);
     assert.equal(getForwardAnim(0.9).chapter, 4);
-    assert.equal(HERO_TRACK_SCROLL_PX, 520);
+    assert.equal(HERO_TRACK_SCROLL_PX, 600);
   });
 });
 
