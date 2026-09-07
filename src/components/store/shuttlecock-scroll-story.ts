@@ -68,18 +68,18 @@ export const CLOSED_PROGRESS = CHAPTER_BOUNDS[1];
  * intro, not mid-track. Mobile finishes slightly sooner than desktop so the
  * short phone track snaps closed without lingering on a half-open pose.
  *
- * Track length is ~5 wheel notches of scroll beyond the sticky pane
- * (`HERO_TRACK_SCROLL_PX`) so the whole story is five clicks, not a long scrub.
+ * Track length is a short extra scroll beyond the sticky pane
+ * (`HERO_TRACK_SCROLL_PX`) so the whole story stays a brief scrub, not a long one.
  */
 export const REVERSE_CLOSE_END_MOBILE = 0.12;
 export const REVERSE_CLOSE_END_DESKTOP = CLOSED_PROGRESS;
 
 /**
- * Extra scroll distance past the sticky 100svh pane. ~100px per mouse-wheel
- * notch × 5 notches lands on each of the five chapters (one part per click).
+ * Extra scroll distance past the sticky 100svh pane. Five equal chapter
+ * windows still map across this range.
  */
-export const HERO_TRACK_SCROLL_PX = 520;
-export const HERO_TRACK_HEIGHT_CLASS = "h-[calc(100svh+520px)]";
+export const HERO_TRACK_SCROLL_PX = 600;
+export const HERO_TRACK_HEIGHT_CLASS = "h-[calc(100svh+600px)]";
 
 function clamp01(v: number) {
   return Math.max(0, Math.min(1, v));
